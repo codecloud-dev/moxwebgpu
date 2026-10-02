@@ -1,0 +1,32 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="glass" x1="30" y1="20" x2="226" y2="236" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#37D5D3"/>
+      <stop offset="1" stop-color="#8A7BFF"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="128" y1="18" x2="128" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="env" cx="0.5" cy="0.5" r="0.75">
+      <stop stop-color="#101527"/>
+      <stop offset="1" stop-color="#06070B"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="58" fill="url(#env)"/>
+  <!-- liquid glass tile -->
+  <g>
+    <rect x="28" y="28" width="200" height="200" rx="52" fill="url(#glass)" fill-opacity="0.22"/>
+    <rect x="28" y="28" width="200" height="200" rx="52" stroke="url(#glass)" stroke-opacity="0.85" stroke-width="2.5"/>
+    <!-- top sheen reflection -->
+    <path d="M52 34 H204 C216 34 226 44 226 56 V86 C160 104 96 104 30 86 V56 C30 44 40 34 52 34 Z" fill="url(#sheen)" fill-opacity="0.5"/>
+  </g>
+  <!-- bolt: GPU compute -->
+  <path d="M140 62 L92 140 H124 L112 194 L168 112 H134 L140 62 Z" fill="url(#glass)"/>
+  <path d="M140 62 L92 140 H124 L112 194 L168 112 H134 L140 62 Z" fill="#FFFFFF" fill-opacity="0.18"/>
+  <!-- grid dots: tensor -->
+  <g fill="#FFFFFF" fill-opacity="0.55">
+    <circle cx="66" cy="190" r="5"/><circle cx="86" cy="190" r="5"/><circle cx="66" cy="170" r="5"/>
+  </g>
+</svg>

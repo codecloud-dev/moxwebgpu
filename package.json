@@ -1,0 +1,60 @@
+{
+  "name": "moxwebgpu",
+  "version": "0.1.0",
+  "description": "⚡ A WebGPU compute (GPGPU) framework — typed tensors, raw kernels and a lazy compute graph, in one tiny package.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./browser": "./dist/moxwebgpu.browser.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run --config vitest.config.ts",
+    "test:gpu": "bash scripts/run-gpu-tests.sh",
+    "test:all": "pnpm test && pnpm test:gpu",
+    "bench": "pnpm build && MOXWEBGPU_VITEST_CONFIG=vitest.bench.config.ts bash scripts/run-gpu-tests.sh",
+    "demo": "pnpm build && mkdir -p examples/browser && cp dist/moxwebgpu.browser.js examples/browser/ && npx -y serve examples/browser -l 5173"
+  },
+  "keywords": [
+    "webgpu",
+    "gpgpu",
+    "gpu",
+    "compute",
+    "tensor",
+    "wgsl",
+    "typescript",
+    "webgl-alternative",
+    "moxsh"
+  ],
+  "author": "codecloud-dev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codecloud-dev/moxwebgpu.git"
+  },
+  "bugs": {
+    "url": "https://github.com/codecloud-dev/moxwebgpu/issues"
+  },
+  "homepage": "https://github.com/codecloud-dev/moxwebgpu#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "@webgpu/types": "^0.1.64",
+    "playwright-core": "^1.58.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.8"
+  }
+}
