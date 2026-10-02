@@ -17,6 +17,8 @@ import {
 import {
   sumDef, meanDef, maxReduceDef, minReduceDef, argmaxDef, argminDef,
   sumAxisDef, meanAxisDef, maxAxisDef, minAxisDef,
+  sumAnyAxisDef, meanAnyAxisDef, maxAnyAxisDef, minAnyAxisDef,
+  normAxis,
 } from './reduce.js';
 import { matmulDef } from './matmul.js';
 import { transposeDef, sliceDef, concatDef } from './shape.js';
@@ -50,26 +52,30 @@ function unaryMethod(def: OpDef) {
 /**
  * Axis-aware reduce methods:
  *   sum()      -> global scalar [1]
- *   sum(-1)    -> reduce along the last axis ([M,K] -> [M])
- *   sum(0)     -> 2D only: reduce along axis 0 ([M,K] -> [K])
+ *   sum(axis)  -> reduce along any axis (negative counts from the end);
+ *                 the last axis uses the fast workgroup-tree kernel, other
+ *                 axes use the generic any-axis kernel
  * For max/min the same method also accepts a Tensor to become elementwise:
  *   max(other) -> elementwise binary max
  */
-function reduceMethod(globalDef: OpDef, axisDef: OpDef | null, binaryDef?: OpDef) {
+function reduceMethod(
+  globalDef: OpDef,
+  axisDef: OpDef | null,
+  genericAxisDef: OpDef | null,
+  binaryDef?: OpDef,
+) {
   return function (this: Tensor, other?: number | Tensor): Tensor {
     if (other === undefined) return this.apply(globalDef, [this], {});
     if (typeof other === 'number') {
-      if (other === -1 || (other === this.ndim - 1 && axisDef)) {
-        if (!axisDef) return this.apply(globalDef, [this], {});
+      const rank = Math.max(1, this.ndim);
+      const ax = normAxis(other, rank);
+      if (ax === rank - 1 && axisDef) {
         return this.apply(axisDef, [this], {});
       }
-      if (other === 0 && axisDef) {
-        if (this.ndim !== 2) {
-          throw new Error(`moxwebgpu: axis=0 reduce currently requires a 2D tensor, got rank ${this.ndim}`);
-        }
-        return this.transpose().apply(axisDef, [this.transpose()], {});
+      if (!genericAxisDef) {
+        throw new Error(`moxwebgpu: axis ${other} reduce is not supported for this op (use no argument for a global reduce)`);
       }
-      throw new Error(`moxwebgpu: unsupported reduce axis ${other} (use undefined, -1 or 0 on 2D)`);
+      return this.apply(genericAxisDef, [this], { axis: ax });
     }
     if (binaryDef && other instanceof Tensor) {
       return this.apply(binaryDef, [this, other], {});
@@ -114,14 +120,14 @@ export function installTensorOps(proto: object): void {
   p.sign = unaryMethod(signDef);
 
   /* ---- reductions (max/min: no arg = reduce; Tensor = elementwise) ---- */
-  p.sum = reduceMethod(sumDef, sumAxisDef);
-  p.mean = reduceMethod(meanDef, meanAxisDef);
-  p.max = reduceMethod(maxReduceDef, maxAxisDef, maxDef);
-  p.min = reduceMethod(minReduceDef, minAxisDef, minDef);
+  p.sum = reduceMethod(sumDef, sumAxisDef, sumAnyAxisDef);
+  p.mean = reduceMethod(meanDef, meanAxisDef, meanAnyAxisDef);
+  p.max = reduceMethod(maxReduceDef, maxAxisDef, maxAnyAxisDef, maxDef);
+  p.min = reduceMethod(minReduceDef, minAxisDef, minAnyAxisDef, minDef);
   p.maxReduce = p.max; // explicit aliases
   p.minReduce = p.min;
-  p.argmax = reduceMethod(argmaxDef, null);
-  p.argmin = reduceMethod(argminDef, null);
+  p.argmax = reduceMethod(argmaxDef, null, null);
+  p.argmin = reduceMethod(argminDef, null, null);
 
   /* ---- matmul & shape ---- */
   p.matmul = function (this: Tensor, other: Tensor): Tensor {

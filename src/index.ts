@@ -31,7 +31,7 @@ export { PipelineCache } from './graph/pipelineCache.js';
 export * from './tensor/codegen.js';
 
 // ---- version ----
-export const MOXWEBGPU_VERSION = '0.1.0';
+export const MOXWEBGPU_VERSION = '0.2.0';
 
 import { Tensor } from './tensor/tensor.js';
 import { installTensorOps } from './tensor/ops/index.js';

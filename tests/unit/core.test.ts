@@ -11,6 +11,7 @@ import {
 import { createNode, topoSort, type OpDef } from '../../src/graph/lazy.js';
 import { matmulDef } from '../../src/tensor/ops/matmul.js';
 import { concatDef } from '../../src/tensor/ops/shape.js';
+import { axisReduceOpDef, normAxis } from '../../src/tensor/ops/reduce.js';
 
 describe('broadcastMode', () => {
   it('plain when shapes match', () => {
@@ -135,5 +136,31 @@ describe('lazy graph', () => {
     const n = createNode(def, [leaf([4], 'a')] as any);
     expect(n.dtype).toBe('f32');
     expect(n.shape).toEqual([4]);
+  });
+});
+
+describe('axisReduceOpDef (generic any-axis)', () => {
+  const def = axisReduceOpDef('sum', { identityValue: 0, combine: (a, b) => `(${a} + ${b})` });
+
+  it('outShape drops the requested axis', () => {
+    expect(def.outShape!([[2, 3, 4]], { axis: 1 })).toEqual([2, 4]);
+    expect(def.outShape!([[2, 3, 4]], { axis: 0 })).toEqual([3, 4]);
+    expect(def.outShape!([[2, 3, 4]], { axis: 2 })).toEqual([2, 3]);
+  });
+
+  it('negative axes normalize from the end', () => {
+    expect(def.outShape!([[2, 3, 4]], { axis: -1 })).toEqual([2, 3]);
+    expect(def.outShape!([[2, 3, 4]], { axis: -3 })).toEqual([3, 4]);
+  });
+
+  it('rank-1 input degenerates to [1]', () => {
+    expect(def.outShape!([[5]], { axis: 0 })).toEqual([1]);
+  });
+
+  it('normAxis handles out-of-range negatives and truncation', () => {
+    expect(normAxis(-1, 3)).toBe(2);
+    expect(normAxis(-4, 3)).toBe(2);
+    expect(normAxis(3, 3)).toBe(0);
+    expect(normAxis(1.7, 3)).toBe(1);
   });
 });

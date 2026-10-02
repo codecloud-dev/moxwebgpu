@@ -51,11 +51,28 @@ struct OpUniforms { n: u32, _p0: u32, scalar: f32, identity: f32 };
 @group(0) @binding(0) var<uniform> uniforms: OpUniforms;`;
 }
 
+/**
+ * Typed identity expression for reduce accumulators. `uniforms.identity` is
+ * always an f32 slot (so ±Infinity can ride in at runtime); int dtypes must
+ * convert it explicitly or `combine` would mix f32 with i32/u32 (a WGSL
+ * type error). WGSL scalar conversions saturate, which yields exactly the
+ * INT_MIN / INT_MAX / UINT_MAX boundaries for max/min identities.
+ */
+const identityTyped = (t: string): string =>
+  t === 'f32' ? 'uniforms.identity' : `${t}(uniforms.identity)`;
+
 /** Uniform block with 2D dims (rows, cols) + scalar scratch + identity. */
 function uni2D(): string {
   return `
 struct OpUniforms { rows: u32, cols: u32, scalar: f32, identity: f32 };
 @group(0) @binding(0) var<uniform> uniforms: OpUniforms;`;
+}
+
+/** Uniform block for generic axis reduction (matches encodeAxisUniform). */
+function uniAxis(): string {
+  return `
+struct AxisUniforms { n_out: u32, inner: u32, dim: u32, scalar: f32, identity: f32, _p0: f32, _p1: f32, _p2: f32 };
+@group(0) @binding(0) var<uniform> uniforms: AxisUniforms;`;
 }
 
 /**
@@ -210,7 +227,7 @@ fn main(
   @builtin(workgroup_id) w: vec3u,
 ) {
   let start = w.x * ${WORKGROUP_SIZE}u * ${REDUCE_CHUNK}u;
-  var acc = uniforms.identity;
+  var acc = ${identityTyped(t)};
   for (var c: u32 = 0u; c < ${REDUCE_CHUNK}u; c++) {
     let idx = start + l.x + c * ${WORKGROUP_SIZE}u;
     if (idx < uniforms.n) {
@@ -251,7 +268,7 @@ fn main(
   @builtin(global_invocation_id) g: vec3u,
   @builtin(local_invocation_id) l: vec3u,
 ) {
-  var acc = uniforms.identity;
+  var acc = ${identityTyped(t)};
   // Sequential over partials (partials count is small).
   for (var i: u32 = l.x; i < uniforms.n; i += ${WORKGROUP_SIZE}u) {
     acc = ${combine('acc', 'partial[i]')};
@@ -438,7 +455,7 @@ fn main(
 ) {
   let cols = uniforms.cols;
   let base = w.x * cols;
-  var acc = uniforms.identity;
+  var acc = ${identityTyped(t)};
   for (var i: u32 = l.x; i < cols; i += ${WORKGROUP_SIZE}u) {
     acc = ${combine('acc', 'input[base + i]')};
   }
@@ -456,6 +473,45 @@ fn main(
   if (l.x == 0u) {
     out[w.x] = ${epilogue ? epilogue('smem[0]') : 'smem[0]'};
   }
+}`;
+}
+
+/**
+ * Generic axis reduction for any rank / any axis: one thread per output
+ * element, serially folding `dim` input elements that stride by `inner`.
+ *
+ * Uniform fields (all runtime values, so any shape shares one pipeline):
+ *  - n_out: outer * inner (total output elements, for bounds check)
+ *  - inner: elements after the reduced axis (stride between folded items)
+ *  - dim:   length of the reduced axis
+ *  - scalar/identity: epilogue divisor (mean) / typed identity (see
+ *    `identityTyped`)
+ *
+ * Simple serial folding — correctness-first; a workgroup-tree variant can
+ * replace it later without changing the op definitions.
+ */
+export function axisReduceWgsl(
+  dtype: DType,
+  combine: (acc: string, x: string) => string,
+  epilogue?: (v: string) => string,
+): string {
+  const t = dtypeInfo(dtype).wgsl;
+  return `
+${uniAxis()}
+${BIND_READ('input', t, 1)}
+${BIND_RW('out', t, 2)}
+@compute @workgroup_size(${WORKGROUP_SIZE})
+fn main(@builtin(global_invocation_id) g: vec3u) {
+  let oid = g.x;
+  if (oid >= uniforms.n_out) { return; }
+  let o = oid / uniforms.inner;
+  let i = oid % uniforms.inner;
+  var acc = ${identityTyped(t)};
+  let base = o * uniforms.dim * uniforms.inner + i;
+  for (var k: u32 = 0u; k < uniforms.dim; k++) {
+    acc = ${combine('acc', 'input[base + k * uniforms.inner]')};
+  }
+  out[oid] = ${epilogue ? epilogue('acc') : 'acc'};
 }`;
 }
 
@@ -610,6 +666,28 @@ export function encode2DUniform(rows: number, cols: number, scalar = 0, identity
   dv.setUint32(4, cols, true);
   dv.setFloat32(8, scalar, true);
   dv.setFloat32(12, identity, true);
+  return b;
+}
+
+/**
+ * AxisUniforms { n_out, inner, dim, scalar, identity, _p0.._p2 } — 32 bytes.
+ * Generic axis-reduction dims; `identity` is an f32 slot that int dtypes
+ * convert (saturating) inside the shader — see `identityTyped`.
+ */
+export function encodeAxisUniform(
+  nOut: number,
+  inner: number,
+  dim: number,
+  scalar = 0,
+  identity = 0,
+): ArrayBuffer {
+  const b = new ArrayBuffer(32);
+  const dv = new DataView(b);
+  dv.setUint32(0, nOut, true);
+  dv.setUint32(4, inner, true);
+  dv.setUint32(8, dim, true);
+  dv.setFloat32(12, scalar, true);
+  dv.setFloat32(16, identity, true);
   return b;
 }
 
