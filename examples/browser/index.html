@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>moxwebgpu · 液态玻璃 WebGPU 计算演示</title>
+<style>
+  :root {
+    --bg: #06070b;
+    --ink: #eef1f8;
+    --muted: #8b93a7;
+    --cyan: #37d5d3;
+    --indigo: #8a7bff;
+    --glass: rgba(255, 255, 255, 0.055);
+    --edge: rgba(255, 255, 255, 0.14);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.6 "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    overflow-x: hidden;
+    position: relative;
+  }
+  /* 漂移的环境光 */
+  .aurora {
+    position: fixed; inset: -20%;
+    background:
+      radial-gradient(40% 35% at 20% 25%, rgba(55, 213, 211, 0.16), transparent 70%),
+      radial-gradient(45% 40% at 78% 70%, rgba(138, 123, 255, 0.15), transparent 70%);
+    filter: blur(60px);
+    animation: drift 26s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  @keyframes drift {
+    from { transform: translate3d(-2%, -1%, 0) scale(1); }
+    to   { transform: translate3d(3%, 2%, 0) scale(1.08); }
+  }
+  /* 指针跟随光斑 */
+  .cursor-glow {
+    position: fixed; width: 460px; height: 460px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(122, 162, 255, 0.09), transparent 65%);
+    transform: translate(-50%, -50%);
+    pointer-events: none; z-index: 1;
+    transition: opacity .4s;
+  }
+  .wrap { position: relative; z-index: 2; max-width: 880px; margin: 0 auto; padding: 64px 24px 96px; }
+  header { text-align: center; margin-bottom: 44px; }
+  .logo {
+    width: 84px; height: 84px; margin: 0 auto 20px; border-radius: 24px;
+    background: linear-gradient(145deg, rgba(55,213,211,.35), rgba(138,123,255,.35));
+    border: 1px solid var(--edge);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 18px 50px rgba(85, 120, 255, .22);
+    display: grid; place-items: center;
+    font-size: 38px;
+  }
+  h1 {
+    font-size: 40px; letter-spacing: .5px;
+    background: linear-gradient(120deg, var(--cyan), var(--indigo));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  header p { color: var(--muted); margin-top: 10px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+  .card {
+    position: relative; border-radius: 20px; padding: 24px;
+    background: var(--glass);
+    border: 1px solid var(--edge);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 20px 45px rgba(0,0,0,.35);
+    backdrop-filter: blur(18px) saturate(1.3);
+    -webkit-backdrop-filter: blur(18px) saturate(1.3);
+    overflow: hidden;
+    transition: transform .25s ease, box-shadow .25s ease;
+  }
+  .card::before { /* 顶部高光反射 */
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 26px 55px rgba(0,0,0,.45); }
+  .card h2 { font-size: 16px; margin-bottom: 6px; }
+  .card .desc { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  button {
+    appearance: none; cursor: pointer;
+    padding: 9px 18px; border-radius: 12px; font-size: 14px; font-weight: 600;
+    color: #0a0c12;
+    background: linear-gradient(120deg, var(--cyan), var(--indigo));
+    border: none; box-shadow: 0 8px 22px rgba(90, 130, 255, .3);
+    transition: filter .2s, transform .1s;
+  }
+  button:hover { filter: brightness(1.12); }
+  button:active { transform: scale(.97); }
+  button:disabled { opacity: .5; cursor: wait; }
+  pre {
+    margin-top: 14px; padding: 12px 14px; border-radius: 12px;
+    background: rgba(0, 0, 0, .35); border: 1px solid rgba(255,255,255,.08);
+    font: 12.5px/1.55 ui-monospace, "JetBrains Mono", Consolas, monospace;
+    color: #b9e7e6; white-space: pre-wrap; word-break: break-all;
+    min-height: 58px;
+  }
+  .status { text-align: center; color: var(--muted); margin-top: 36px; font-size: 13.5px; }
+  .status b { color: var(--cyan); }
+  footer { text-align: center; color: var(--muted); margin-top: 46px; font-size: 12.5px; }
+  footer a { color: var(--indigo); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="aurora"></div>
+<div class="cursor-glow" id="glow"></div>
+
+<div class="wrap">
+  <header>
+    <div class="logo">⚡</div>
+    <h1>moxwebgpu</h1>
+    <p>WebGPU 通用计算框架 —— 类型化张量 · 原始 Kernel · 惰性计算图</p>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>张量链式调用</h2>
+      <div class="desc">add → relu → mul → sum,惰性求值一次下发</div>
+      <button id="btn-chain">运行</button>
+      <pre id="out-chain">等待运行…</pre>
+    </div>
+    <div class="card">
+      <h2>矩阵乘法</h2>
+      <div class="desc">[128×128] · [128×128],16×16 workgroup 分块</div>
+      <button id="btn-matmul">运行</button>
+      <pre id="out-matmul">等待运行…</pre>
+    </div>
+    <div class="card">
+      <h2>Softmax</h2>
+      <div class="desc">逐行数值稳定 softmax,单 workgroup 融合三遍</div>
+      <button id="btn-softmax">运行</button>
+      <pre id="out-softmax">等待运行…</pre>
+    </div>
+    <div class="card">
+      <h2>归约</h2>
+      <div class="desc">1M 元素两阶段树形归约 sum / max</div>
+      <button id="btn-reduce">运行</button>
+      <pre id="out-reduce">等待运行…</pre>
+    </div>
+  </div>
+
+  <p class="status" id="status">正在初始化 WebGPU…</p>
+
+  <footer>
+    moxwebgpu — MoX 工具系列成员 ·
+    <a href="https://github.com/codecloud-dev/moxwebgpu" target="_blank" rel="noopener">GitHub</a>
+  </footer>
+</div>
+
+<script src="moxwebgpu.browser.js"></script>
+<script>
+  const glow = document.getElementById('glow');
+  addEventListener('pointermove', (e) => {
+    glow.style.left = e.clientX + 'px';
+    glow.style.top = e.clientY + 'px';
+  });
+
+  const status = document.getElementById('status');
+  const fmt = (arr, n = 8) => Array.from(arr).slice(0, n).map(v => +v.toFixed(4)).join(', ');
+
+  async function run(id, fn) {
+    const btn = document.getElementById('btn-' + id);
+    const out = document.getElementById('out-' + id);
+    btn.disabled = true;
+    out.textContent = '计算中…';
+    try {
+      const t0 = performance.now();
+      const text = await fn();
+      out.textContent = `${text}\n⏱ ${(performance.now() - t0).toFixed(2)} ms(含读回)`;
+    } catch (err) {
+      out.textContent = '❌ ' + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  (async () => {
+    if (!navigator.gpu) {
+      status.innerHTML = '❌ 此浏览器不支持 WebGPU(需 Chrome/Edge 113+,且页面处于安全上下文 https/localhost)';
+      return;
+    }
+    try {
+      const gpu = await MoxWebGPU.mox.init();
+      const info = gpu.info();
+      status.innerHTML = `✅ WebGPU 就绪 — <b>${info.description || info.vendor || info.architecture || 'adapter'}</b> · 点上面的按钮开跑`;
+
+      document.getElementById('btn-chain').onclick = () => run('chain', async () => {
+        const r = await gpu.tensor([1, 2, 3, 4, -5, 6]).add(1).relu().mul(10).sum().item();
+        return `((1+1,2+1,3+1,-5+1,6+1)+·relu)×10 之 sum = ${r}\n预期: 2,3,4,0,7 → (2+3+4+0+7)×10 = 140`;
+      });
+
+      document.getElementById('btn-matmul').onclick = () => run('matmul', async () => {
+        const n = 128;
+        const a = new Float32Array(n * n).fill(0.5);
+        const b = new Float32Array(n * n).fill(2);
+        const c = await gpu.tensor(a, { shape: [n, n] }).matmul(gpu.tensor(b, { shape: [n, n] })).toArray();
+        return `C[0,0..7] = ${fmt(c)}\n预期: 0.5 × 2 × 128 = 128(全矩阵同值)`;
+      });
+
+      document.getElementById('btn-softmax').onclick = () => run('softmax', async () => {
+        const row = [1, 2, 3, 4];
+        const p = await gpu.tensor(row).softmax().toArray();
+        return `softmax([1,2,3,4]) = ${fmt(p)}\n行和 = ${Array.from(p).reduce((s, v) => s + v, 0).toFixed(6)}(应为 1)`;
+      });
+
+      document.getElementById('btn-reduce').onclick = () => run('reduce', async () => {
+        const n = 1 << 20;
+        const data = new Float32Array(n);
+        for (let i = 0; i < n; i++) data[i] = i % 1000;
+        const t = gpu.tensor(data);
+        const s = await t.sum().item();
+        const m = await t.max().item();
+        return `sum(1M) = ${s}\n预期: 499500000\nmax(1M) = ${m}\n预期: 999`;
+      });
+    } catch (err) {
+      status.innerHTML = '❌ 初始化失败:' + err.message;
+    }
+  })();
+</script>
+</body>
+</html>
