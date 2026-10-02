@@ -49,15 +49,40 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Install Chrome + xvfb
+      # Chrome from the official action: the previous `apt install google-chrome-stable`
+      # path broke on current runners (repo/signature churn). This one is pinned and
+      # always yields a working binary.
+      - name: Install Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Install xvfb
         run: |
-          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
-          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable xvfb
+          if command -v xvfb-run >/dev/null 2>&1; then
+            echo "xvfb already present"
+          else
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq xvfb
+          fi
 
       - name: Build browser bundle
         run: pnpm build
 
       - name: GPU end-to-end tests (SwiftShader)
-        run: pnpm test:gpu
+        env:
+          MOXWEBGPU_CHROME: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          CHROME="${{ steps.chrome.outputs.chrome-path }}"
+          CHROME_DIR="$(dirname "$CHROME")"
+          # Chrome ships a SwiftShader Vulkan ICD next to the binary; point Vulkan
+          # at it so WebGPU has a (software) adapter to talk to.
+          for icd in \
+            "$CHROME_DIR/vk_swiftshader_icd.json" \
+            "$CHROME_DIR/../vk_swiftshader_icd.json" \
+            "$CHROME_DIR/../../vk_swiftshader_icd.json"; do
+            if [ -f "$icd" ]; then export VK_ICD_FILENAMES="$icd"; break; fi
+          done
+          echo "chrome           = $CHROME"
+          echo "VK_ICD_FILENAMES = ${VK_ICD_FILENAMES:-<unset, relying on Chrome fallback>}"
+          "$CHROME" --version
+          pnpm test:gpu
