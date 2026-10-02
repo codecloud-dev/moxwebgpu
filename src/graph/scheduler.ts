@@ -67,7 +67,11 @@ export class Scheduler {
     const plan = n.op.build(inputShapes, inputDtypes, n.attrs);
 
     const output = this.ctx.pool.acquire(Math.max(1, numElements(n.shape)), n.dtype);
+    // Latest temp written (read by the next step via `read { temp: true }`).
     let prevTemp: GpuDataBuffer | null = null;
+    // Every intermediate temp this op allocates — multi-step ops may write
+    // several (e.g. phase1 temp + softmax-style scratch); all are recycled.
+    const tempBufs: GpuDataBuffer[] = [];
     const scratchUbos: GPUBuffer[] = [];
 
     const encoder = device.createCommandEncoder();
@@ -80,12 +84,16 @@ export class Scheduler {
       // chunk straight into the output at different offsets).
       const writesOutput =
         isLast || step.bindings.some((b) => b.kind === 'rw' && (b as any).output === true);
-      const outBuf = writesOutput
+      const outBuf: GpuDataBuffer = writesOutput
         ? output
-        : this.ctx.pool.acquire(
-            Math.max(1, step.tempOutputElements!(n.shape)),
-            step.tempOutputDtype ?? n.dtype,
-          );
+        : (() => {
+            const temp = this.ctx.pool.acquire(
+              Math.max(1, step.tempOutputElements!(n.shape)),
+              step.tempOutputDtype ?? n.dtype,
+            );
+            tempBufs.push(temp);
+            return temp;
+          })();
 
       const entries: GPUBindGroupEntry[] = [];
       for (const b of step.bindings as BindingSpec[]) {
@@ -123,8 +131,8 @@ export class Scheduler {
     queue.submit([encoder.finish()]);
 
     // Recycle the per-dispatch uniform blocks (same-queue-timeline reuse is
-    // safe) and inputs whose consumers are exhausted, plus the final
-    // intermediate temp buffer.
+    // safe), every intermediate temp buffer, and inputs whose consumers are
+    // exhausted.
     for (const ubo of scratchUbos) {
       this.ctx.pool.releaseUniform(ubo);
     }
@@ -135,9 +143,8 @@ export class Scheduler {
         nodeInput.buffer = null;
       }
     }
-    if (prevTemp) {
-      this.ctx.pool.release(prevTemp);
-      prevTemp = null;
+    for (const temp of tempBufs) {
+      this.ctx.pool.release(temp);
     }
 
     n.buffer = output;

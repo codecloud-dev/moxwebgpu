@@ -7,7 +7,36 @@
 
 ## [Unreleased]
 
-计划中(见 README 路线图):f16/bf16、任意轴归约、tensor-core matmul、多 GPU pass 融合、moxsh 生态集成。
+计划中(见 README 路线图):f16/bf16、tensor-core matmul、多 GPU pass 融合、moxsh 生态集成。
+
+## [0.2.0] - 2026-10-02
+
+### 新增
+
+- **任意轴归约**:`sum(axis)` / `mean(axis)` / `max(axis)` / `min(axis)` 现支持
+  **任意 rank、任意轴**(负轴从末尾数,`-1` 即最后一轴)。新通用内核
+  `axisReduceWgsl`(每输出元素一线程,沿轴串行折叠,维度走 uniform 因此全形状共享
+  同一管线);末轴仍走原来的 workgroup 树形快速路径。2D 的 `sum(0)` 从借道
+  transpose 改为直连通用内核(单 pass,累加顺序不变)。
+- 整型归约可用:`i32` / `u32` 的 `sum` / `max` / `min` 全部支持
+  (全局 + 按轴);`argmax` / `argmin` 对整型本就可用。
+
+### 修复
+
+- **i32/u32 归约此前无法编译**(真 bug):累加器 `var acc = uniforms.identity`
+  被推断为 f32,与整型输入 `combine` 产生 WGSL 类型错误。现在整型在 shader 内
+  对 f32 identity 槽做**显式饱和转换**(`identityTyped`),max/min 的 identity 按
+  dtype 取饱和边界(i32:±2147483647…8,u32:0/4294967295)。
+- `mean` 对整型输入给出明确报错(提示先 `cast('f32')`),而不是难以理解的
+  shader 编译失败。
+- **调度器 temp 回收加固**:`runNode` 原用单槽 `prevTemp` 回收中间缓冲,若某算子
+  出现 ≥3 个 step(多个中间 temp)会泄漏。现改为 `tempBufs` 数组,本节点分配的
+  全部中间 temp 一律回收(当前算子行为不变,属预防性加固)。
+
+### 测试
+
+- GPU e2e +4:3D 任意轴(轴 0/1/2、负轴、mean)、i32 全局、u32 全局(含 0 元素)、
+  i32 按轴;单测 +axisReduceOpDef outShape / normAxis 共 7 用例。
 
 ## [0.1.0] - 2026-10-02
 
@@ -79,5 +108,6 @@
   (validation error = 静默 no-op)→ 严格分池 + `releaseUniform()`。
 - 每次执行泄漏 scratch UBO → submit 后统一归还池。
 
-[unreleased]: https://github.com/codecloud-dev/moxwebgpu/compare/v0.1.0...HEAD
+[unreleased]: https://github.com/codecloud-dev/moxwebgpu/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/codecloud-dev/moxwebgpu/releases/tag/v0.2.0
 [0.1.0]: https://github.com/codecloud-dev/moxwebgpu/releases/tag/v0.1.0

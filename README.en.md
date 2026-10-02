@@ -37,7 +37,7 @@ Core     BufferPool (power-of-two buckets) · PipelineCache (WGSL hash) · raw K
 - **Lazy by default** — a whole chain dispatches once on `.item()`; intermediates never leak
 - **30+ GPU ops** — elementwise, two-phase tree reductions, argmax/argmin, 16×16-tiled matmul, fused softmax, strided slicing/concat, zero-copy reshape
 - **Silent-failure defense** — shader compile errors surfaced with line/column via `getCompilationInfo()`
-- **40 passing tests** — 23 GPU e2e (value-compared against CPU references) + 17 unit tests, green even on GPU-less machines via SwiftShader + xvfb
+- **44 passing tests** — 27 GPU e2e (value-compared against CPU references) + 17 unit tests, green even on GPU-less machines via SwiftShader + xvfb
 - **Zero runtime dependencies**, ESM + CJS + IIFE + d.ts, ~30 KB browser bundle
 
 ## MoX series
@@ -117,7 +117,9 @@ await gpu.tensor([[1, 2], [3, 4]]).matmul(gpu.tensor([[5, 6], [7, 8]])).toArray(
 const x = gpu.tensor([[1, 2, 3, 4], [5, 6, 7, 8]]);
 await x.sum().item();      // 36         global → [1]
 await x.sum(-1).toArray(); // [10, 26]   last axis
-await x.sum(0).toArray();  // [6, 8, 10, 12]   axis 0 (2D, transposed internally) → [4]
+await x.sum(0).toArray();  // [6, 8, 10, 12]   axis 0 → [4]
+const t3 = gpu.tensor(Array.from({ length: 24 }, (_, i) => i), { shape: [2, 3, 4] });
+await t3.sum(1).toArray(); // [12,15,18,21,48,51,54,57] — any axis of any rank; negative axes count from the end
 await x.max().item();      // 8
 await x.argmax().item();   // 7 (first occurrence wins)
 await x.softmax().toArray(); // numerically stable, row sums = 1
@@ -136,7 +138,7 @@ await gpu.tensor([1.7, -3.9]).cast('i32').toArray(); // [1, -3] (trunc toward ze
 
 ```ts
 t.max()        // global reduce → [1]
-t.max(-1)      // reduce along last axis
+t.max(-1)      // reduce along last axis (any axis works: t.max(0), t.sum(-2), …)
 t.max(other)   // elementwise with another tensor
 // unambiguous aliases: maxReduce / minReduce
 ```
@@ -246,7 +248,8 @@ WebGPU validation errors **don't throw** — objects go invalid, dispatches beco
 | `moxwebgpu: no suitable GPU adapter` | adapter blocked; update drivers |
 | `moxwebgpu: broadcast failed ...` | shapes neither equal nor broadcastable |
 | `moxwebgpu: slice range [...] out of bounds` | slice OOB |
-| `moxwebgpu: unsupported reduce axis ...` | only no-arg / `-1` / 2D `0` supported |
+| `moxwebgpu: axis ... reduce is not supported` | this op has no axis-reduce form (e.g. `argmax`); omit the argument for a global reduce |
+| `moxwebgpu: mean requires f32 input` | `mean` is f32-only; cast integers first (`cast('f32')`) |
 
 ---
 
@@ -272,7 +275,7 @@ Built-in performance design: lazy graph (one readback per chain), refcounted int
 | Suite | Count | Coverage |
 | ----- | ----- | -------- |
 | `tests/unit/` | 17 | byte-level uniform encoders, WGSL codegen, topo sort, OpDef shapes |
-| `tests/gpu/` | **23** | elementwise / broadcast / unary chains / lazy chains / matmul ×3 / all reductions / argmax / softmax / slice / concat / reshape views / deep pipelines / raw Kernel |
+| `tests/gpu/` | **27** | elementwise / broadcast / unary chains / lazy chains / matmul ×3 / all reductions / argmax / softmax / slice / concat / reshape views / deep pipelines / raw Kernel |
 | `tests/gpu/bench/` | bench | elementwise / matmul / reduce / chain (medians) |
 
 GPU cases are value-compared against **CPU reference implementations** — not "didn't crash" tests.
@@ -295,7 +298,7 @@ chromium --enable-unsafe-webgpu --enable-features=Vulkan --no-sandbox
 | ------- | ------------ |
 | `pnpm build` | tsup → ESM / CJS / IIFE + d.ts |
 | `pnpm test` | 17 unit tests |
-| `pnpm test:gpu` | 23 GPU e2e (auto SwiftShader/xvfb) |
+| `pnpm test:gpu` | 27 GPU e2e (auto SwiftShader/xvfb) |
 | `pnpm test:all` | both |
 | `pnpm bench` | micro-benchmarks |
 | `pnpm demo` | build + serve the demo page (:5173) |
@@ -335,7 +338,7 @@ Want to add an op? `OpDef` = pure metadata (shape inference + codegen) → two t
 ## Roadmap
 
 - [ ] f16 / bf16 dtypes
-- [ ] arbitrary-axis reductions beyond 2D
+- [x] arbitrary-axis reductions (any rank, negative axes)
 - [ ] tensor-core-friendly matmul (double buffering)
 - [ ] multi-pass fusion in the scheduler
 - [ ] moxsh ecosystem integration

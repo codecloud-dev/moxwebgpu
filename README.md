@@ -25,7 +25,7 @@
   <img src="https://img.shields.io/badge/Ops-30%2B-ff7ac3" alt="算子数量">  
 </p>
 
-> **同一份代码,浏览器与 Node 通用。** 没有独立显卡的机器上,用 Chrome 自带的 SwiftShader 软件渲染也能把 23 个真实 WebGPU 端到端测试全部跑绿——这是 moxwebgpu 与大多数「纸面 WebGPU 项目」最大的不同:**它的每一行 GPU 代码都被真实验证过**。
+> **同一份代码,浏览器与 Node 通用。** 没有独立显卡的机器上,用 Chrome 自带的 SwiftShader 软件渲染也能把 27 个真实 WebGPU 端到端测试全部跑绿——这是 moxwebgpu 与大多数「纸面 WebGPU 项目」最大的不同:**它的每一行 GPU 代码都被真实验证过**。
 
 <details>
 
@@ -72,7 +72,7 @@
 | 产物    | ESM + CJS + IIFE(浏览器全局 `MoxWebGPU`)+ 完整 `.d.ts`  |
 | 数据类型  | `f32` / `i32` / `u32`                            |
 | 内置算子  | 30+(逐元素 / 归约 / 矩阵 / 形状 / NN / 类型转换)              |
-| 测试    | 17 单元测试 + **23 个真实 GPU 端到端测试** + 微基准             |
+| 测试    | 17 单元测试 + **27 个真实 GPU 端到端测试** + 微基准             |
 | 最低环境  | 支持 WebGPU 的浏览器(Chrome / Edge 113+);Node ≥ 18(构建) |
 
 > **moxwebgpu 适合谁**:需要在浏览器里做矩阵运算、图像处理、信号处理、ML 前向推理、并行数值计算,又不想手写一屏 WebGPU 样板代码的你。  
@@ -248,7 +248,9 @@ const x = gpu.tensor([[1, 2, 3, 4], [5, 6, 7, 8]]);
 
 await x.sum().item();      // 36    全局归约 → [1]
 await x.sum(-1).toArray(); // [10, 26]  按最后一轴 → [2]
-await x.sum(0).toArray();  // [6, 8, 10, 12]  按第 0 轴(2D,内部先 transpose)→ [4]
+await x.sum(0).toArray();  // [6, 8, 10, 12]  按第 0 轴 → [4]
+const t3 = gpu.tensor(Array.from({ length: 24 }, (_, i) => i), { shape: [2, 3, 4] });
+await t3.sum(1).toArray(); // [12,15,18,21,48,51,54,57] —— 3D 中间轴也行,负轴从末尾数
 await x.max().toArray();   // [8]
 await x.argmax().item();   // 7(首见优先)
 
@@ -340,7 +342,7 @@ t.destroy();      // 单个张量释放(通常不需要,池会自动回收中间
 | 二元   | `add` `sub` `mul` `div` `pow`(Tensor 或标量)                                                         |
 | 标量反转 | `rsub(x)` ≙ `x - t`、`rdiv(x)` ≙ `x / t`                                                           |
 | 一元   | `neg` `abs` `exp` `log` `sqrt` `sin` `cos` `tanh` `floor` `ceil` `relu` `sigmoid` `square` `sign` |
-| 归约   | `sum` `mean` `max` `min`(无参=全局;`-1`/`0`=按轴;`max(t)`/`min(t)`=元素级)、`argmax` `argmin`(→ `u32`)      |
+| 归约   | `sum` `mean` `max` `min`(无参=全局;**任意轴**=按轴,负轴从末尾数;`max(t)`/`min(t)`=元素级)、`argmax` `argmin`(→ `u32`) |
 | 范围   | `clamp(lo, hi)`、`slice(start, size)`(≤4D)、`concat(other, axis?)`                                  |
 | NN   | `softmax()`(数值稳定,逐最后一轴)                                                                           |
 | 类型   | `cast('f32' \| 'i32' \| 'u32')`、`toFloat()`                                                       |
@@ -425,7 +427,8 @@ WebGPU validation 错误**不抛异常**:对象变 invalid、dispatch 变 no-op�
 | `moxwebgpu: no suitable GPU adapter`           | 适配器被屏蔽;更新显卡驱动 / 浏览器                              |
 | `moxwebgpu: broadcast failed ...`              | 二元运算形状既不相同也不可广播                                  |
 | `moxwebgpu: slice range [...] out of bounds`   | 切片越界                                             |
-| `moxwebgpu: unsupported reduce axis ...`       | 归约只支持无参 / `-1` / 2D 的 `0`                        |
+| `moxwebgpu: axis ... reduce is not supported`  | 该算子不支持按轴归约(如 `argmax`);全局归约请不传参             |
+| `moxwebgpu: mean requires f32 input`           | `mean` 只支持 f32;整型请先 `cast('f32')`                      |
 | `[page:warning] Error while parsing WGSL: ...` | 测试 harness 转发的 shader 编译错误——按行列号修 WGSL           |
 
 调试技巧:`gpu.kernel()` 的自定义 WGSL 同样走缓存与编译检查,报错会带行号列号打印到控制台。
@@ -491,7 +494,7 @@ chromium \
 | ------------------------ | ------------------------------- |
 | `pnpm build`             | tsup 构建 ESM / CJS / IIFE + d.ts |
 | `pnpm test`              | 17 单元测试                         |
-| `pnpm test:gpu`          | 23 GPU 端到端(自动 SwiftShader/xvfb) |
+| `pnpm test:gpu`          | 27 GPU 端到端(自动 SwiftShader/xvfb) |
 | `pnpm test:all`          | 两者都跑                            |
 | `pnpm bench`             | 微基准                             |
 | `pnpm demo`              | 构建并起本地演示页(localhost:5173)       |
@@ -595,6 +598,7 @@ moxwebgpu/
 ## 路线图
 
 - [x] **v0.1** —— 三层架构、30+ 算子、23 个真实 GPU e2e、液态玻璃演示
+- [x] **v0.2** —— 任意轴归约(任意 rank/负轴)、整型归约修复、调度器 temp 回收加固
 - [ ] 自动微分(反向图叠加在现有 lazy graph 上)
 - [ ] 更多 NN 算子:layernorm / embedding / conv1d
 - [ ] 相邻逐元素算子的 pass 融合(进一步压 dispatch 次数)

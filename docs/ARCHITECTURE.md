@@ -415,9 +415,10 @@ WebGPU 的 validation 错误**不抛异常**:对象变 invalid、后续 dispatch
 | 取舍 | 现状 | 影响 |
 | ---- | ---- | ---- |
 | dtype 只有 32 位 | f32/i32/u32 | f16/bf16 需要扩展支持(路线图) |
-| 按轴归约只支持最后一轴 + 2D 的 0 轴 | 0 轴借道 transpose | >2D 任意轴待做 |
+| 任意轴归约用**串行折叠**内核(`axisReduceWgsl`,每输出元素一线程) | 任意 rank / 任意轴(负轴规范化)已支持;末轴仍走 workgroup 树形快速路径 | 长轴(数千+)时串行折叠慢于树形;workgroup 树形通用轴版本在路线图。dispatch 沿 x 单维,输出元素 >4M 需拆 2D 网格 |
+| 整型归约的 identity 走 f32 uniform 槽 + shader 内饱和转换(`identityTyped`) | i32/u32 的 sum/max/min 正确;`mean` 对整型明确报错(提示 cast) | 整型 mean 的语义(截断/取整)定案后可放开 |
 | 两阶段归约 | phase2 是**单 workgroup**,但用 64 线程 strided 折叠任意多个 partial,**无硬性上限**;整条链的实际上限来自 phase1 的 workgroup 数(≤ maxComputeWorkgroupsPerDimension = 65535)→ 约 33M 元素以内单 GPU pass 可承受 | 更大规模需 2D 网格(在路线图) |
-| 调度器 temp 回收为单槽 `prevTemp` | 适配当前全部算子(最多 2 个 step、1 个中间 temp),正确无泄漏 | **加算子须知**:若未来出现 ≥3 个 step 且含多个中间 temp 的算子,中间 temp 不会被回收,会泄漏——需扩展为多槽回收或在该算子内自行串联 |
+| 调度器 temp 回收为 `tempBufs` 数组(本节点全部中间 temp 一律回收) | v0.2 起多 step / 多中间 temp 的算子也不再泄漏;step 间传递仍用 `prevTemp` 指向"上一个 step 的 temp" | 无已知隐患 |
 | `Kernel.run()` 读回长度 | 优先取传入 `GpuDataBuffer.elements`(池化 buffer 按 2 的幂字节桶向上取整,直接读原始尺寸会多读 padding);传入裸 `GPUBuffer` 则回退到其原始尺寸 | 逃生舱读回要拿到精确长度,请传 `GpuDataBuffer` 而非 `.buffer` |
 | matmul 未用 tensor core / 双缓冲 | 经典 16×16 tile | 正确性优先,性能版本在路线图 |
 | 同队列时间线 UBO 复用 | 见 §4.2 说明 | 未来可加 fence,接口不变 |
