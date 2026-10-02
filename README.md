@@ -1,31 +1,34 @@
-<p align="center">
-  <img src="assets/logo.svg" width="128" alt="moxwebgpu 液态玻璃标志">
+<p align="center">  
+  <img src="assets/logo.svg" width="128" alt="moxwebgpu 液态玻璃标志">  
 </p>
 
 <h1 align="center">moxwebgpu</h1>
 
-<p align="center">
-  <b>把 WebGPU 通用计算变成一行代码</b><br>
-  类型化张量 · 惰性计算图 · 原始 Kernel —— 三层能力装进一个零依赖的 TypeScript 包
+<p align="center">  
+  <b>把 WebGPU 通用计算变成一行代码</b>  
+  
+  类型化张量 · 惰性计算图 · 原始 Kernel —— 三层能力装进一个零依赖的 TypeScript 包  
 </p>
 
-<p align="center">
-  <a href="https://github.com/codecloud-dev/moxwebgpu/actions"><img src="https://img.shields.io/github/actions/workflow/status/codecloud-dev/moxwebgpu/ci.yml?branch=main&label=CI&color=8a7bff" alt="CI"></a>
-  <a href="https://github.com/codecloud-dev/moxwebgpu/stargazers"><img src="https://img.shields.io/github/stars/codecloud-dev/moxwebgpu?style=social" alt="GitHub Stars"></a>
-  <a href="https://github.com/codecloud-dev/moxwebgpu/discussions"><img src="https://img.shields.io/github/discussions/codecloud-dev/moxwebgpu?label=Discussions&color=ff7ac3" alt="社区讨论"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/codecloud-dev/moxwebgpu?color=37d5d3" alt="许可证 MIT"></a>
-  <br>
-  <img src="https://img.shields.io/badge/WebGPU-GPGPU-8a7bff?logo=webgpu&logoColor=white" alt="WebGPU GPGPU">
-  <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white" alt="TypeScript 5.x">
-  <img src="https://img.shields.io/badge/Runtime_Deps-0-37d5d3" alt="运行时零依赖">
-  <img src="https://img.shields.io/badge/Bundle-IIFE·ESM·CJS-2088FF" alt="三产物">
-  <img src="https://img.shields.io/badge/Tests-23%20GPU_e2e_%2B_17_unit-3DDC84" alt="测试覆盖">
-  <img src="https://img.shields.io/badge/Ops-30%2B-ff7ac3" alt="算子数量">
+<p align="center">  
+  <a href="https://github.com/codecloud-dev/moxwebgpu/actions"><img src="https://img.shields.io/github/actions/workflow/status/codecloud-dev/moxwebgpu/ci.yml?branch=main\&label=CI\&color=8a7bff" alt="CI"></a>  
+  <a href="https://github.com/codecloud-dev/moxwebgpu/stargazers"><img src="https://img.shields.io/github/stars/codecloud-dev/moxwebgpu?style=social" alt="GitHub Stars"></a>  
+  <a href="https://github.com/codecloud-dev/moxwebgpu/discussions"><img src="https://img.shields.io/github/discussions/codecloud-dev/moxwebgpu?label=Discussions\&color=ff7ac3" alt="社区讨论"></a>  
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/codecloud-dev/moxwebgpu?color=37d5d3" alt="许可证 MIT"></a>  
+    
+  
+  <img src="https://img.shields.io/badge/WebGPU-GPGPU-8a7bff?logo=webgpu\&logoColor=white" alt="WebGPU GPGPU">  
+  <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript\&logoColor=white" alt="TypeScript 5.x">  
+  <img src="https://img.shields.io/badge/Runtime_Deps-0-37d5d3" alt="运行时零依赖">  
+  <img src="https://img.shields.io/badge/Bundle-IIFE·ESM·CJS-2088FF" alt="三产物">  
+  <img src="https://img.shields.io/badge/Tests-23%20GPU_e2e\_%2B_17_unit-3DDC84" alt="测试覆盖">  
+  <img src="https://img.shields.io/badge/Ops-30%2B-ff7ac3" alt="算子数量">  
 </p>
 
 > **同一份代码,浏览器与 Node 通用。** 没有独立显卡的机器上,用 Chrome 自带的 SwiftShader 软件渲染也能把 23 个真实 WebGPU 端到端测试全部跑绿——这是 moxwebgpu 与大多数「纸面 WebGPU 项目」最大的不同:**它的每一行 GPU 代码都被真实验证过**。
 
 <details>
+
 <summary><b>目录</b>(点击展开)</summary>
 
 - [项目概览](#项目概览)
@@ -57,22 +60,22 @@
 
 **moxwebgpu** = **MoX** + **WebGPU**:一个面向浏览器的 **WebGPU 通用计算(GPGPU)框架**(不是 moxsh,也不是别的;名字就来自 MoX 系列 + WebGPU)。它把 WebGPU 底层繁琐的适配器管理、管线构建、缓冲区生命周期、数据读回全部封装起来,对外暴露三层递进式 API:
 
-| 你想要     | moxwebgpu 给你的                                    | 一句话示例                                              |
-| ---------- | ------------------------------------------------ | ------------------------------------------------------- |
-| 快速做计算 | **Tensor 层** —— 类型化张量 + 链式算子            | `gpu.tensor([1,2,3]).add(1).sum().item()`               |
-| 省心做优化 | **Lazy 计算图** —— 整链一次下发、中间缓冲自动回收 | 六个算子串起来也只 dispatch 一次                         |
-| 完全控制   | **Kernel 层** —— 直接跑原始 WGSL                  | `gpu.kernel(wgsl).run([bufA, bufB], { elements: 64 })`  |
+| 你想要   | moxwebgpu 给你的                   | 一句话示例                                                  |
+| ----- | ------------------------------- | ------------------------------------------------------ |
+| 快速做计算 | **Tensor 层** —— 类型化张量 + 链式算子    | `gpu.tensor([1,2,3]).add(1).sum().item()`              |
+| 省心做优化 | **Lazy 计算图** —— 整链一次下发、中间缓冲自动回收 | 六个算子串起来也只 dispatch 一次                                  |
+| 完全控制  | **Kernel 层** —— 直接跑原始 WGSL      | `gpu.kernel(wgsl).run([bufA, bufB], { elements: 64 })` |
 
-| 关键指标   | 数值                                                        |
-| ---------- | ----------------------------------------------------------- |
-| 运行时依赖 | **0**(纯 TypeScript)                                       |
-| 产物       | ESM + CJS + IIFE(浏览器全局 `MoxWebGPU`)+ 完整 `.d.ts`        |
-| 数据类型   | `f32` / `i32` / `u32`                                        |
-| 内置算子   | 30+(逐元素 / 归约 / 矩阵 / 形状 / NN / 类型转换)           |
-| 测试       | 17 单元测试 + **23 个真实 GPU 端到端测试** + 微基准          |
-| 最低环境   | 支持 WebGPU 的浏览器(Chrome / Edge 113+);Node ≥ 18(构建) |
+| 关键指标  | 数值                                               |
+| ----- | ------------------------------------------------ |
+| 运行时依赖 | **0**(纯 TypeScript)                              |
+| 产物    | ESM + CJS + IIFE(浏览器全局 `MoxWebGPU`)+ 完整 `.d.ts`  |
+| 数据类型  | `f32` / `i32` / `u32`                            |
+| 内置算子  | 30+(逐元素 / 归约 / 矩阵 / 形状 / NN / 类型转换)              |
+| 测试    | 17 单元测试 + **23 个真实 GPU 端到端测试** + 微基准             |
+| 最低环境  | 支持 WebGPU 的浏览器(Chrome / Edge 113+);Node ≥ 18(构建) |
 
-> **moxwebgpu 适合谁**:需要在浏览器里做矩阵运算、图像处理、信号处理、ML 前向推理、并行数值计算,又不想手写一屏 WebGPU 样板代码的你。
+> **moxwebgpu 适合谁**:需要在浏览器里做矩阵运算、图像处理、信号处理、ML 前向推理、并行数值计算,又不想手写一屏 WebGPU 样板代码的你。  
 > **moxwebgpu 不做什么**:不做 WebGL 回退(WebGPU 是底线)、暂不做训练侧自动微分(在路线图上)、不绑定任何 UI 框架。
 
 ---
@@ -81,13 +84,15 @@
 
 moxwebgpu 是 **MoX 工具系列**的新成员。一套审美与工程哲学:把浏览器里「本该简单」的能力,认真重造一遍。
 
-|      产品      |   状态   | 一句话定位                                                            |
-| :----------: | :----: | ---------------------------------------------------------------- |
-|   **moxsh**  |  已上线 | Android 液态玻璃终端,兼容 Termux 生态([仓库](https://github.com/codecloud-dev/moxsh-terminal)) |
-| **mox-site** |  已上线 | 本系列官方门户([官网](https://codecloud-dev.github.io/mox-site/))              |
-|  **moxwebgpu**  | 已上线(本仓库) | **WebGPU 通用计算框架 —— 浏览器里的张量与计算图**                       |
-|  **moxbox**  | 规划中 · 待定 | 文件管理与系统套件;**可能做,也可能不做**                            |
-|  **moxcode** | 规划中 · 待定 | 移动端轻量 IDE;**可能做,也可能不做**                      |
+|       产品      |    状态    | 一句话定位                                                                              |
+| :-----------: | :------: | ---------------------------------------------------------------------------------- |
+|   **moxsh**   |    已上线   | Android 液态玻璃终端,兼容 Termux 生态([仓库](https://github.com/codecloud-dev/moxsh-terminal)) |
+|  **mox-site** |    已上线   | 本系列官方门户([官网](https://codecloud-dev.github.io/mox-site/))                           |
+| **moxwebgpu** | 已上线(本仓库) | **WebGPU 通用计算框架 —— 浏览器里的张量与计算图**                                                   |
+|   **moxbox**  | 规划中 · 待定 | 文件管理与系统套件;**可能做,也可能不做**                                                            |
+|  **moxcode**  | 规划中 · 待定 | 移动端轻量 IDE;**可能做,也可能不做**                                                            |
+
+
 
 ---
 
@@ -95,13 +100,13 @@ moxwebgpu 是 **MoX 工具系列**的新成员。一套审美与工程哲学:把
 
 WebGPU 的 compute pipeline 能力极强,但裸用它做一次向量加法,你要亲手闯过五关:
 
-| #  | 你要亲手做的事                                        | 容易踩的坑                                                              |
-| :- | ----------------------------------------------------- | ------------------------------------------------------------------------ |
-| 1  | `requestAdapter` → `requestDevice` → 队列管理          | 上下文样板代码一写一屏,拿错 adapter 直接崩                               |
-| 2  | 写 WGSL、建 `ShaderModule`、拼 bind group layout      | uniform 对齐规则隐蔽;**布局错了不报错,dispatch 变 no-op**                 |
-| 3  | 手动分配 / 复用 / 销毁 storage buffer                  | 忘销毁就泄漏;复用错就是脏数据;池子写不好性能反而降                        |
-| 4  | staging buffer + `copyBufferToBuffer` + map 读回      | 读回流程繁琐,同步语义搞错就读到半截数据                                   |
-| 5  | 每个形状重新建 pipeline                                | 反复 dispatch 时编译开销白白流失                                          |
+| #  | 你要亲手做的事                                        | 容易踩的坑                                       |
+| :- | ---------------------------------------------- | ------------------------------------------- |
+| 1  | `requestAdapter` → `requestDevice` → 队列管理      | 上下文样板代码一写一屏,拿错 adapter 直接崩                  |
+| 2  | 写 WGSL、建 `ShaderModule`、拼 bind group layout    | uniform 对齐规则隐蔽;**布局错了不报错,dispatch 变 no-op** |
+| 3  | 手动分配 / 复用 / 销毁 storage buffer                  | 忘销毁就泄漏;复用错就是脏数据;池子写不好性能反而降                  |
+| 4  | staging buffer + `copyBufferToBuffer` + map 读回 | 读回流程繁琐,同步语义搞错就读到半截数据                        |
+| 5  | 每个形状重新建 pipeline                               | 反复 dispatch 时编译开销白白流失                       |
 
 其中第 2 关的「静默失败」最阴险:**WebGPU 的 validation 错误不会抛异常**,只会让对象悄悄变 invalid、dispatch 变成 no-op,你盯着满屏的 0 毫无头绪。moxwebgpu 在开发期就栽过这些坑(WGSL `shared` 保留字、uniform 数组 stride 两种后端不一致、const-expression 禁止 ±Infinity),**坑全部沉淀成了框架的内置防御**(见[错误处理与调试](#错误处理与调试))。
 
@@ -307,76 +312,76 @@ t.destroy();      // 单个张量释放(通常不需要,池会自动回收中间
 
 ### `mox.init(options?)` → `Promise<MoxContext>`
 
-| 选项                    | 类型                               | 说明                               |
-| ----------------------- | ---------------------------------- | ---------------------------------- |
-| `adapter`               | `GPUAdapter`                       | 自带 adapter(跳过 requestAdapter) |
-| `powerPreference`       | `'low-power' \| 'high-performance'` | 电耗偏好                           |
-| `requestAdapterOptions` | `GPURequestAdapterOptions`         | 其余透传                           |
+| 选项                      | 类型                                  | 说明                            |
+| ----------------------- | ----------------------------------- | ----------------------------- |
+| `adapter`               | `GPUAdapter`                        | 自带 adapter(跳过 requestAdapter) |
+| `powerPreference`       | `'low-power' \| 'high-performance'` | 电耗偏好                          |
+| `requestAdapterOptions` | `GPURequestAdapterOptions`          | 其余透传                          |
 
 ### MoxContext
 
-| 成员                       | 说明                                                         |
-| -------------------------- | ------------------------------------------------------------ |
-| `tensor(data, opts?)`      | 创建张量;`data` 支持嵌套数组 / TypedArray;`opts.shape` 可选  |
-| `kernel(code, opts?)`      | 包装原始 WGSL(`workgroupSize` / `entryPoint` / `output` / `dtype`) |
-| `readback(buf)`            | GPU buffer → CPU TypedArray                                   |
-| `info()`                   | adapter 概要 `{ vendor, architecture, device, description }`  |
-| `pool`                     | BufferPool(高级用法)                                         |
-| `pipelines`                | PipelineCache(高级用法)                                      |
-| `scheduler`                | 计算图调度器(高级用法)                                       |
-| `destroy()`                | 释放一切                                                      |
+| 成员                    | 说明                                                             |
+| --------------------- | -------------------------------------------------------------- |
+| `tensor(data, opts?)` | 创建张量;`data` 支持嵌套数组 / TypedArray;`opts.shape` 可选                |
+| `kernel(code, opts?)` | 包装原始 WGSL(`workgroupSize` / `entryPoint` / `output` / `dtype`) |
+| `readback(buf)`       | GPU buffer → CPU TypedArray                                    |
+| `info()`              | adapter 概要 `{ vendor, architecture, device, description }`     |
+| `pool`                | BufferPool(高级用法)                                               |
+| `pipelines`           | PipelineCache(高级用法)                                            |
+| `scheduler`           | 计算图调度器(高级用法)                                                   |
+| `destroy()`           | 释放一切                                                           |
 
 ### Tensor
 
-| 类别     | 成员                                                                                  |
-| -------- | ------------------------------------------------------------------------------------- |
-| 属性     | `shape: number[]`、`ndim`、`dtype`、`size`(元素数)                                     |
-| 变换     | `reshape(...dims \| number[])`(**零拷贝**,支持 `-1`)、`transpose()`(2D)                |
-| 二元     | `add` `sub` `mul` `div` `pow`(Tensor 或标量)                                          |
-| 标量反转 | `rsub(x)` ≙ `x - t`、`rdiv(x)` ≙ `x / t`                                              |
-| 一元     | `neg` `abs` `exp` `log` `sqrt` `sin` `cos` `tanh` `floor` `ceil` `relu` `sigmoid` `square` `sign` |
-| 归约     | `sum` `mean` `max` `min`(无参=全局;`-1`/`0`=按轴;`max(t)`/`min(t)`=元素级)、`argmax` `argmin`(→ `u32`) |
-| 范围     | `clamp(lo, hi)`、`slice(start, size)`(≤4D)、`concat(other, axis?)`                     |
-| NN       | `softmax()`(数值稳定,逐最后一轴)                                                     |
-| 类型     | `cast('f32' \| 'i32' \| 'u32')`、`toFloat()`                                           |
-| 读回     | `await toArray(): TypedArray`、`await toBuffer(): GpuDataBuffer`、`await item(): number` |
-| 释放     | `destroy()`                                                                           |
+| 类别   | 成员                                                                                                |
+| ---- | ------------------------------------------------------------------------------------------------- |
+| 属性   | `shape: number[]`、`ndim`、`dtype`、`size`(元素数)                                                      |
+| 变换   | `reshape(...dims \| number[])`(**零拷贝**,支持 `-1`)、`transpose()`(2D)                                 |
+| 二元   | `add` `sub` `mul` `div` `pow`(Tensor 或标量)                                                         |
+| 标量反转 | `rsub(x)` ≙ `x - t`、`rdiv(x)` ≙ `x / t`                                                           |
+| 一元   | `neg` `abs` `exp` `log` `sqrt` `sin` `cos` `tanh` `floor` `ceil` `relu` `sigmoid` `square` `sign` |
+| 归约   | `sum` `mean` `max` `min`(无参=全局;`-1`/`0`=按轴;`max(t)`/`min(t)`=元素级)、`argmax` `argmin`(→ `u32`)      |
+| 范围   | `clamp(lo, hi)`、`slice(start, size)`(≤4D)、`concat(other, axis?)`                                  |
+| NN   | `softmax()`(数值稳定,逐最后一轴)                                                                           |
+| 类型   | `cast('f32' \| 'i32' \| 'u32')`、`toFloat()`                                                       |
+| 读回   | `await toArray(): TypedArray`、`await toBuffer(): GpuDataBuffer`、`await item(): number`            |
+| 释放   | `destroy()`                                                                                       |
 
 > **惰性语义**:`add` / `matmul` / `softmax` 等只是往计算图添节点;`toArray()` / `item()` / `toBuffer()` 才触发执行。已执行节点会缓存 GPU buffer,重复读回**不会重算**。
 
 ### Kernel
 
-| 方法                                            | 说明                                          |
-| ----------------------------------------------- | --------------------------------------------- |
-| `run(buffers, { elements } \| { workgroups })`  | dispatch + 读回最后一个 binding 为 TypedArray |
-| `dispatch(buffers, [wx, wy, wz])`               | 只 dispatch 不读回                             |
+| 方法                                             | 说明                                     |
+| ---------------------------------------------- | -------------------------------------- |
+| `run(buffers, { elements } \| { workgroups })` | dispatch + 读回最后一个 binding 为 TypedArray |
+| `dispatch(buffers, [wx, wy, wz])`              | 只 dispatch 不读回                         |
 
 约定:WGSL 里 `@group(0) @binding(i)` 的声明顺序 = `buffers[i]` 的传入顺序。
 
 ### BufferPool(高级)
 
-| 方法                                     | 说明                                          |
-| ---------------------------------------- | --------------------------------------------- |
-| `acquire(elements, dtype)`               | 从 2 的幂字节桶取 storage buffer               |
-| `acquireUniform(bytes)`                  | 取 uniform buffer(独立桶族,与 storage 隔离)  |
-| `release(buf)` / `releaseUniform(ubo)`   | 归还                                           |
-| `live` / `pooled` / `clear()`            | 统计与清空                                     |
+| 方法                                     | 说明                                  |
+| -------------------------------------- | ----------------------------------- |
+| `acquire(elements, dtype)`             | 从 2 的幂字节桶取 storage buffer           |
+| `acquireUniform(bytes)`                | 取 uniform buffer(独立桶族,与 storage 隔离) |
+| `release(buf)` / `releaseUniform(ubo)` | 归还                                  |
+| `live` / `pooled` / `clear()`          | 统计与清空                               |
 
 ---
 
 ## 算子清单
 
-| 家族     | 算子                                                                                    | GPU 实现                                     |
-| -------- | --------------------------------------------------------------------------------------- | -------------------------------------------- |
-| 逐元素   | `add` `sub` `mul` `div` `pow` `min` `max` `clamp`                                       | 1D / 2D(行/列广播)uniform 参数化            |
-| 反转标量 | `rsub` `rdiv`                                                                            | 同上                                         |
-| 一元     | `neg` `abs` `exp` `log` `sqrt` `sin` `cos` `tanh` `floor` `ceil` `relu` `sigmoid` `square` `sign` | 单 pass 逐元素                       |
-| 全局归约 | `sum` `mean` `max` `min` `argmax` `argmin`                                               | 两阶段树形归约(workgroup=64,chunk=8)       |
-| 按轴归约 | `sum(-1)` `mean(-1)` `max(-1)` `min(-1)`、`sum(0)`(2D,内部先 transpose)                   | 单 workgroup 负责一行的树形归约               |
-| 矩阵     | `matmul`                                                                                 | 16×16 tile,workgroup 内存分块累加            |
-| 形状     | `transpose`(2D)、`slice`(≤4D)、`concat`(任意轴)、`reshape`(零拷贝)                    | 通用 ND gather/copy shader(vec4 uniform)   |
-| NN       | `softmax`                                                                                | 单 workgroup 融合三遍:max → exp 求和 → 归一  |
-| 类型     | `cast`(f32 ↔ i32 ↔ u32)                                                                | 单 pass 转换(向零截断)                      |
+| 家族   | 算子                                                                                                | GPU 实现                                 |
+| ---- | ------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| 逐元素  | `add` `sub` `mul` `div` `pow` `min` `max` `clamp`                                                 | 1D / 2D(行/列广播)uniform 参数化              |
+| 反转标量 | `rsub` `rdiv`                                                                                     | 同上                                     |
+| 一元   | `neg` `abs` `exp` `log` `sqrt` `sin` `cos` `tanh` `floor` `ceil` `relu` `sigmoid` `square` `sign` | 单 pass 逐元素                             |
+| 全局归约 | `sum` `mean` `max` `min` `argmax` `argmin`                                                        | 两阶段树形归约(workgroup=64,chunk=8)          |
+| 按轴归约 | `sum(-1)` `mean(-1)` `max(-1)` `min(-1)`、`sum(0)`(2D,内部先 transpose)                               | 单 workgroup 负责一行的树形归约                  |
+| 矩阵   | `matmul`                                                                                          | 16×16 tile,workgroup 内存分块累加            |
+| 形状   | `transpose`(2D)、`slice`(≤4D)、`concat`(任意轴)、`reshape`(零拷贝)                                         | 通用 ND gather/copy shader(vec4 uniform) |
+| NN   | `softmax`                                                                                         | 单 workgroup 融合三遍:max → exp 求和 → 归一     |
+| 类型   | `cast`(f32 ↔ i32 ↔ u32)                                                                           | 单 pass 转换(向零截断)                        |
 
 ---
 
@@ -384,20 +389,20 @@ t.destroy();      // 单个张量释放(通常不需要,池会自动回收中间
 
 ### dtype
 
-| dtype | WGSL  | 字节 | 读回 TypedArray |
-| ----- | ----- | ---- | --------------- |
-| `f32` | `f32` | 4    | `Float32Array`  |
-| `i32` | `i32` | 4    | `Int32Array`    |
-| `u32` | `u32` | 4    | `Uint32Array`   |
+| dtype | WGSL  | 字节 | 读回 TypedArray  |
+| ----- | ----- | -- | -------------- |
+| `f32` | `f32` | 4  | `Float32Array` |
+| `i32` | `i32` | 4  | `Int32Array`   |
+| `u32` | `u32` | 4  | `Uint32Array`  |
 
 ### uniform 块(全部 16 字节对齐)
 
-| kernel 家族                  | 布局                                                                        |
-| ---------------------------- | --------------------------------------------------------------------------- |
-| 1D 逐元素 / 全局归约         | `OpUniforms { n: u32, _pad: u32, scalar: f32, identity: f32 }`(16 B)        |
-| 2D 广播 / 按轴归约 / softmax | `OpUniforms { rows: u32, cols: u32, scalar: f32, identity: f32 }`(16 B)     |
-| copy(slice/concat)          | `outShape/inStrides/outStrides: vec4<u32>` + `inOffset/outOffset/total/rank: u32`(64 B) |
-| matmul                       | `Dims { m, n, k, _pad }`(16 B)                                              |
+| kernel 家族              | 布局                                                                                      |
+| ---------------------- | --------------------------------------------------------------------------------------- |
+| 1D 逐元素 / 全局归约          | `OpUniforms { n: u32, _pad: u32, scalar: f32, identity: f32 }`(16 B)                    |
+| 2D 广播 / 按轴归约 / softmax | `OpUniforms { rows: u32, cols: u32, scalar: f32, identity: f32 }`(16 B)                 |
+| copy(slice/concat)     | `outShape/inStrides/outStrides: vec4<u32>` + `inOffset/outOffset/total/rank: u32`(64 B) |
+| matmul                 | `Dims { m, n, k, _pad }`(16 B)                                                          |
 
 两条**血泪教训**已固化为设计:
 
@@ -414,14 +419,14 @@ WebGPU validation 错误**不抛异常**:对象变 invalid、dispatch 变 no-op�
 
 ### 常见错误速查
 
-| 错误消息(节选)                                | 原因与解法                                                       |
-| ----------------------------------------------- | ------------------------------------------------------------------ |
-| `moxwebgpu: WebGPU is not available here...`       | 浏览器不支持 / 非 https 安全上下文;换 Chrome 113+ 或 localhost     |
-| `moxwebgpu: no suitable GPU adapter`               | 适配器被屏蔽;更新显卡驱动 / 浏览器                                 |
-| `moxwebgpu: broadcast failed ...`                  | 二元运算形状既不相同也不可广播                                     |
-| `moxwebgpu: slice range [...] out of bounds`       | 切片越界                                                           |
-| `moxwebgpu: unsupported reduce axis ...`           | 归约只支持无参 / `-1` / 2D 的 `0`                                  |
-| `[page:warning] Error while parsing WGSL: ...`  | 测试 harness 转发的 shader 编译错误——按行列号修 WGSL               |
+| 错误消息(节选)                                       | 原因与解法                                            |
+| ---------------------------------------------- | ------------------------------------------------ |
+| `moxwebgpu: WebGPU is not available here...`   | 浏览器不支持 / 非 https 安全上下文;换 Chrome 113+ 或 localhost |
+| `moxwebgpu: no suitable GPU adapter`           | 适配器被屏蔽;更新显卡驱动 / 浏览器                              |
+| `moxwebgpu: broadcast failed ...`              | 二元运算形状既不相同也不可广播                                  |
+| `moxwebgpu: slice range [...] out of bounds`   | 切片越界                                             |
+| `moxwebgpu: unsupported reduce axis ...`       | 归约只支持无参 / `-1` / 2D 的 `0`                        |
+| `[page:warning] Error while parsing WGSL: ...` | 测试 harness 转发的 shader 编译错误——按行列号修 WGSL           |
 
 调试技巧:`gpu.kernel()` 的自定义 WGSL 同样走缓存与编译检查,报错会带行号列号打印到控制台。
 
@@ -431,12 +436,12 @@ WebGPU validation 错误**不抛异常**:对象变 invalid、dispatch 变 no-op�
 
 `pnpm bench` 在 SwiftShader(纯 CPU 软渲染,与 CI 同环境)上的中位数,**含 dispatch + 读回全链路**:
 
-| 负载                             | 耗时     | 吞吐         |
-| -------------------------------- | -------- | ------------ |
-| add 1M f32(标量)               | ~数十 ms | —            |
-| matmul [512×512]·[512×512]       | ~890 ms  | ~0.3 GFLOP/s |
-| sum 1M f32(两阶段树形)         | ~69 ms   | —            |
-| add→relu→mul→sum 1M(4 算子链) | ~285 ms  | —            |
+| 负载                         | 耗时      | 吞吐           |
+| -------------------------- | ------- | ------------ |
+| add 1M f32(标量)             | ~数十 ms  | —            |
+| matmul [512×512]·[512×512] | ~890 ms | ~0.3 GFLOP/s |
+| sum 1M f32(两阶段树形)          | ~69 ms  | —            |
+| add→relu→mul→sum 1M(4 算子链) | ~285 ms | —            |
 
 > SwiftShader 是**纯 CPU 模拟 GPU**,数字仅用于跨版本回归对比。同一份代码在真实硬件(集显/独显)上通常快 **10–100×**;matmul 受益于 16×16 分块,大矩阵吞吐会显著上升。
 
@@ -452,11 +457,11 @@ WebGPU validation 错误**不抛异常**:对象变 invalid、dispatch 变 no-op�
 
 ### 测试矩阵
 
-| 套件               | 数量        | 覆盖                                                            |
-| ------------------ | ----------- | --------------------------------------------------------------- |
-| `tests/unit/`      | 17 用例     | uniform 编码字节级校验、WGSL 生成、拓扑排序、OpDef 形状推导      |
+| 套件                 | 数量        | 覆盖                                                                                                             |
+| ------------------ | --------- | -------------------------------------------------------------------------------------------------------------- |
+| `tests/unit/`      | 17 用例     | uniform 编码字节级校验、WGSL 生成、拓扑排序、OpDef 形状推导                                                                        |
 | `tests/gpu/`       | **23 用例** | 逐元素 / 广播 / 一元链 / 惰性链 / matmul 3 种尺寸 / 全部归约 / argmax / softmax / slice / concat / reshape 视图 / 深流水线 / 低层 Kernel |
-| `tests/gpu/bench/` | 微基准      | elementwise / matmul / 归约 / 链式(中位数统计)                 |
+| `tests/gpu/bench/` | 微基准       | elementwise / matmul / 归约 / 链式(中位数统计)                                                                          |
 
 GPU 用例全部与 **CPU 参考实现**逐值比对(matmul / softmax / argmax / argmin 均有 CPU 版),不是「不崩就算过」。
 
@@ -482,15 +487,15 @@ chromium \
 
 ### 本地命令
 
-| 命令                      | 作用                                        |
-| ------------------------- | ------------------------------------------- |
-| `pnpm build`              | tsup 构建 ESM / CJS / IIFE + d.ts            |
-| `pnpm test`               | 17 单元测试                                  |
-| `pnpm test:gpu`           | 23 GPU 端到端(自动 SwiftShader/xvfb)       |
-| `pnpm test:all`           | 两者都跑                                     |
-| `pnpm bench`              | 微基准                                       |
-| `pnpm demo`               | 构建并起本地演示页(localhost:5173)         |
-| `pnpm exec tsc --noEmit`  | 类型检查                                     |
+| 命令                       | 作用                              |
+| ------------------------ | ------------------------------- |
+| `pnpm build`             | tsup 构建 ESM / CJS / IIFE + d.ts |
+| `pnpm test`              | 17 单元测试                         |
+| `pnpm test:gpu`          | 23 GPU 端到端(自动 SwiftShader/xvfb) |
+| `pnpm test:all`          | 两者都跑                            |
+| `pnpm bench`             | 微基准                             |
+| `pnpm demo`              | 构建并起本地演示页(localhost:5173)       |
+| `pnpm exec tsc --noEmit` | 类型检查                            |
 
 ---
 
@@ -500,12 +505,12 @@ chromium \
 
 四张玻璃卡片,各自真刀真枪跑在 WebGPU 上:
 
-| 卡片         | 内容                                        |
-| ------------ | ------------------------------------------- |
-| 张量链式调用 | `add → relu → mul → sum`,展示惰性一次下发   |
-| 矩阵乘法     | [128×128]·[128×128],显示耗时                |
-| Softmax      | 逐行 softmax + 行和校验 = 1                  |
-| 归约         | 1M 元素 sum / max 与预期值对照               |
+| 卡片      | 内容                                |
+| ------- | --------------------------------- |
+| 张量链式调用  | `add → relu → mul → sum`,展示惰性一次下发 |
+| 矩阵乘法    | [128×128]·[128×128],显示耗时          |
+| Softmax | 逐行 softmax + 行和校验 = 1             |
+| 归约      | 1M 元素 sum / max 与预期值对照            |
 
 ```bash
 pnpm demo        # 构建 + 起服务,浏览器打开 http://localhost:5173
@@ -578,7 +583,7 @@ moxwebgpu/
 以 `rsqrt`(平方根倒数)为例:
 
 1. **codegen.ts**:若现有模板不够,加一个 WGSL 模板(记住:binding 0 是 uniform;别用 `shared` 当变量名;±inf 别写进 const-expression);
-2. **ops/elementwise.ts**:一行 unary 定义 —— `export const rsqrtDef = unaryOpDef('rsqrt', (a) => \`inverseSqrt(${a})\`);`
+2. **ops/elementwise.ts**:一行 unary 定义 —— `export const rsqrtDef = unaryOpDef('rsqrt', (a) => \`inverseSqrt(${a})\`);\`
 3. **ops/index.ts**:`p.rsqrt = unaryMethod(rsqrtDef);` 注册到原型;
 4. **测试**:单元测试(编码/形状)+ GPU 测试(与 CPU 值比对);
 5. `pnpm test && pnpm test:gpu` 全绿,提 PR。
@@ -602,22 +607,22 @@ moxwebgpu/
 
 ## FAQ
 
-**Q:浏览器控制台报 `navigator.gpu is undefined`?**
+**Q:浏览器控制台报 `navigator.gpu is undefined`?**  
 A:WebGPU 需要 Chrome/Edge 113+,且页面处于安全上下文(https 或 localhost)。`file://` 直接打开不行,用 `pnpm demo` 起本地服务。
 
-**Q:计算结果是全 0 / 乱码?**
+**Q:计算结果是全 0 / 乱码?**  
 A:99% 是 WGSL 编译失败(静默 no-op)。moxwebgpu 已把编译错误打印到控制台(带行列号),按提示修 shader 即可。直接用 moxwebgpu 内置算子则不会遇到。
 
-**Q:和 TensorFlow.js / transformers.js 什么关系?**
+**Q:和 TensorFlow.js / transformers.js 什么关系?**  
 A:它们是「模型中心」:面向推理预置模型。moxwebgpu 是「算子中心」:给你 NumPy 式的原始计算能力 + 逃生舱,恰好可以作为它们没有的那层「通用 GPGPU 地基」。
 
-**Q:支持训练(反向传播)吗?**
+**Q:支持训练(反向传播)吗?**  
 A:暂不支持,自动微分在路线图第一位(现有 lazy graph 天然适合叠加反向图)。
 
-**Q:为什么我的机器跑 `pnpm test:gpu` 也能过?我没有 N 卡。**
+**Q:为什么我的机器跑 `pnpm test:gpu` 也能过?我没有 N 卡。**  
 A:因为 SwiftShader——Chrome 自带的纯软件 Vulkan 实现。moxwebgpu 的 GPU 测试配方**不要求真显卡**,CI 上也一样。
 
-**Q:i32/u32 乘法会溢出吗?**
+**Q:i32/u32 乘法会溢出吗?**  
 A:遵循 WGSL 语义(按位回绕)。归约 identity、编码器、读回视图都已按 dtype 处理。
 
 ---

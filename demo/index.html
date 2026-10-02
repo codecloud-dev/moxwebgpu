@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>moxwebgpu · 用你自己的 GPU 算给你看</title>
+<meta name="description" content="moxwebgpu 实时演示：粒子吸引子 / 曼德勃罗分形 / 图像卷积 / 视频滤镜，GPU 与 CPU 一键切换，帧率差距肉眼可见。全部计算发生在你的浏览器里。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>%E2%9A%A1</text></svg>">
+<style>
+  :root {
+    --bg: #06070b;
+    --ink: #eef1f8;
+    --muted: #8b93a7;
+    --dim: #5d6478;
+    --cyan: #37d5d3;
+    --indigo: #8a7bff;
+    --amber: #ffb457;
+    --red: #ff6b6b;
+    --glass: rgba(255, 255, 255, 0.055);
+    --edge: rgba(255, 255, 255, 0.14);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { min-height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.65 "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+    overflow-x: hidden;
+    position: relative;
+  }
+  .aurora {
+    position: fixed; inset: -20%;
+    background:
+      radial-gradient(40% 35% at 18% 22%, rgba(55, 213, 211, 0.18), transparent 70%),
+      radial-gradient(46% 42% at 80% 72%, rgba(138, 123, 255, 0.16), transparent 70%),
+      radial-gradient(30% 30% at 60% 10%, rgba(255, 180, 87, 0.08), transparent 70%);
+    filter: blur(60px);
+    animation: drift 26s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  @keyframes drift {
+    from { transform: translate3d(-2%, -1%, 0) scale(1); }
+    to   { transform: translate3d(3%, 2%, 0) scale(1.08); }
+  }
+  /* 指针跟随微光 */
+  .cursor-glow {
+    position: fixed; width: 420px; height: 420px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(138,123,255,.10), transparent 60%);
+    transform: translate(-50%, -50%); pointer-events: none; z-index: 1;
+    transition: opacity .3s; mix-blend-mode: screen;
+  }
+  .wrap { position: relative; z-index: 2; max-width: 1080px; margin: 0 auto; padding: 30px 22px 70px; }
+
+  /* ---------- 顶部不支持 banner ---------- */
+  .banner {
+    display: flex; align-items: center; gap: 12px; justify-content: center;
+    padding: 14px 20px; margin-bottom: 22px; border-radius: 14px;
+    background: rgba(255, 107, 107, .12); border: 1px solid rgba(255, 107, 107, .42);
+    color: #ffd3d3; font-size: 14px; line-height: 1.6; text-align: center;
+  }
+  .banner .emoji { font-size: 22px; }
+  .banner.hidden { display: none; }
+
+  header { text-align: center; margin-bottom: 24px; }
+  .brandlogo { width: 84px; height: 84px; margin: 0 auto 14px; filter: drop-shadow(0 10px 30px rgba(55,213,211,.35)); animation: bob 5s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  h1 { font-size: 33px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 9px; background: linear-gradient(120deg, #fff, var(--cyan) 60%, var(--indigo)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  header .sub { color: var(--muted); font-size: 15px; max-width: 640px; margin: 0 auto; }
+  header .where {
+    margin-top: 14px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px;
+    background: var(--glass); border: 1px solid var(--edge); font-size: 12.5px; color: var(--muted);
+  }
+  header .where b { color: var(--cyan); font-weight: 700; }
+  header .where .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+  .topbar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+  .lang { display: inline-flex; border: 1px solid var(--edge); border-radius: 999px; overflow: hidden; background: var(--glass); }
+  .lang button { padding: 6px 14px; font-size: 12.5px; background: none; border: none; color: var(--muted); cursor: pointer; }
+  .lang button.on { background: rgba(55,213,211,.18); color: var(--ink); font-weight: 600; }
+
+  /* ---------- GPU / CPU 开关 ---------- */
+  .switchbar { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 22px 0 12px; flex-wrap: wrap; }
+  .sw-label { font-size: 14px; color: var(--dim); transition: color .2s; }
+  .sw-label.on { color: var(--ink); font-weight: 700; }
+  .switch {
+    position: relative; width: 116px; height: 44px; border-radius: 999px;
+    background: rgba(255,255,255,.07); border: 1px solid var(--edge);
+    cursor: pointer; transition: background .25s ease, border-color .25s ease;
+  }
+  .switch[data-mode="cpu"] { background: rgba(255,180,87,.16); border-color: rgba(255,180,87,.5); }
+  .switch[data-mode="gpu"] { background: rgba(55,213,211,.16); border-color: rgba(55,213,211,.5); }
+  .switch .knob {
+    position: absolute; top: 4px; width: 54px; height: 36px; border-radius: 999px;
+    background: linear-gradient(160deg, #fff, #dfe3ff); color: #14172a;
+    display: grid; place-items: center; font-size: 12px; font-weight: 800;
+    transition: left .25s cubic-bezier(.4,1.3,.5,1); box-shadow: 0 4px 14px -4px rgba(0,0,0,.7);
+  }
+  .switch[data-mode="cpu"] .knob { left: 4px; }
+  .switch[data-mode="gpu"] .knob { left: 58px; }
+  .switch:disabled { opacity: .45; cursor: not-allowed; }
+  .hint { text-align: center; font-size: 13px; color: var(--dim); margin: 4px 0 16px; }
+
+  /* ---------- tabs ---------- */
+  .tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; flex-wrap: wrap; }
+  .tab {
+    display: inline-flex; align-items: center; gap: 7px; padding: 9px 17px; border-radius: 12px;
+    font-size: 13.5px; cursor: pointer; background: var(--glass); border: 1px solid var(--edge);
+    color: var(--muted); transition: all .2s ease;
+  }
+  .tab .ic { font-size: 15px; }
+  .tab:hover { color: var(--ink); transform: translateY(-2px); }
+  .tab.active { background: rgba(55,213,211,.16); border-color: rgba(55,213,211,.5); color: var(--ink); font-weight: 700; }
+
+  /* ---------- stage ---------- */
+  .stage { position: relative; border-radius: 20px; overflow: hidden; border: 1px solid var(--edge); background: #04050a; box-shadow: 0 30px 80px -40px rgba(55,213,211,.4); }
+  canvas#cv { display: block; width: 100%; height: auto; }
+  .badge { position: absolute; top: 12px; left: 12px; padding: 5px 12px; border-radius: 9px; font-size: 12px; font-weight: 700; backdrop-filter: blur(10px); background: rgba(0,0,0,.45); border: 1px solid var(--edge); }
+  .badge.gpu { color: var(--cyan); }
+  .badge.cpu { color: var(--amber); }
+  .fps { position: absolute; top: 12px; right: 12px; padding: 6px 13px; border-radius: 9px; font-size: 12.5px; font-variant-numeric: tabular-nums; backdrop-filter: blur(10px); background: rgba(0,0,0,.45); border: 1px solid var(--edge); color: var(--muted); letter-spacing: .02em; }
+  .fps b { color: var(--ink); font-size: 16px; }
+  .fps .ms { color: var(--dim); font-size: 11px; }
+  .vid-win { position: absolute; right: 12px; bottom: 12px; width: 200px; height: 124px; border-radius: 10px; border: 1px solid var(--edge); object-fit: cover; box-shadow: 0 12px 30px -10px rgba(0,0,0,.8); display: none; background: #000; }
+  .vid-win.show { display: block; }
+  .vid-tag { position: absolute; right: 16px; bottom: 142px; font-size: 10.5px; color: var(--muted); background: rgba(0,0,0,.5); padding: 2px 7px; border-radius: 6px; display: none; }
+  .vid-tag.show { display: block; }
+
+  /* ---------- panel ---------- */
+  .panel { margin-top: 18px; padding: 22px 24px; border-radius: 18px; background: var(--glass); border: 1px solid var(--edge); }
+  .sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px 26px; }
+  .sl label { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+  .sl label span { color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 700; }
+  .sl input[type=range] { width: 100%; accent-color: var(--cyan); cursor: pointer; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 18px; }
+  .btn { padding: 8px 16px; border-radius: 10px; font-size: 13px; cursor: pointer; background: rgba(255,255,255,.07); border: 1px solid var(--edge); color: var(--ink); transition: all .2s ease; }
+  .btn:hover { background: rgba(255,255,255,.14); transform: translateY(-1px); }
+  .btn.primary { background: rgba(55,213,211,.18); border-color: rgba(55,213,211,.5); }
+  select { padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.07); border: 1px solid var(--edge); color: var(--ink); font-size: 13px; }
+  .note { margin-top: 16px; font-size: 12.5px; color: var(--dim); line-height: 1.8; padding: 12px 16px; background: rgba(0,0,0,.25); border-radius: 12px; border-left: 3px solid var(--cyan); }
+
+  /* ---------- usage ---------- */
+  .usage { margin-top: 30px; padding: 26px 28px; border-radius: 18px; background: linear-gradient(160deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); border: 1px solid var(--edge); }
+  .usage h2 { font-size: 20px; margin-bottom: 6px; display: flex; align-items: center; gap: 9px; }
+  .usage .lead { color: var(--muted); font-size: 13.5px; margin-bottom: 18px; }
+  .usage h3 { font-size: 14.5px; margin: 18px 0 8px; color: var(--cyan); display: flex; align-items: center; gap: 8px; }
+  .usage ol, .usage ul { padding-left: 22px; color: var(--ink); font-size: 13.5px; line-height: 1.9; }
+  .usage li { margin-bottom: 4px; }
+  .usage code { background: rgba(138,123,255,.16); padding: 1px 7px; border-radius: 6px; font-size: 12.5px; color: #cfcaff; }
+  .usage .tag { display: inline-block; padding: 2px 9px; border-radius: 7px; font-size: 11.5px; font-weight: 700; background: rgba(255,180,87,.16); color: var(--amber); margin-right: 6px; }
+  .usage .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 26px; }
+  @media (max-width: 720px) { .usage .grid2 { grid-template-columns: 1fr; } }
+
+  .status { text-align: center; margin-top: 22px; font-size: 13.5px; color: var(--muted); min-height: 22px; }
+  .status b { color: var(--cyan); }
+  .status.warn { color: var(--amber); }
+
+  footer { text-align: center; color: var(--dim); margin-top: 44px; font-size: 12.5px; line-height: 2; }
+  footer a { color: var(--indigo); text-decoration: none; }
+  footer .emoji { font-size: 18px; }
+</style>
+</head>
+<body>
+<div class="aurora"></div>
+<div class="cursor-glow" id="glow"></div>
+
+<div class="wrap">
+  <!-- 顶部不支持 WebGPU 的醒目提示 -->
+  <div class="banner hidden" id="banner">
+    <span class="emoji">⚠️</span>
+    <span id="banner-text"></span>
+  </div>
+
+  <div class="topbar">
+    <div class="lang">
+      <button data-lang="zh" class="on">中文</button>
+      <button data-lang="en">EN</button>
+    </div>
+  </div>
+
+  <header>
+    <svg class="brandlogo" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#37d5d3"/><stop offset="1" stop-color="#8a7bff"/>
+        </linearGradient>
+      </defs>
+      <rect x="6" y="6" width="72" height="72" rx="18" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.22)"/>
+      <rect x="6" y="6" width="72" height="72" rx="18" fill="url(#g1)" opacity=".12"/>
+      <path d="M48 16 L26 46 H40 L36 68 L60 34 H44 Z" fill="url(#g1)" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+    </svg>
+    <h1 data-i18n="title">moxwebgpu</h1>
+    <p class="sub" data-i18n="sub">三个实时演示 · 一个视频特效 · GPU 与 CPU 一键切换 · 差距肉眼可见</p>
+    <div class="where"><span class="dot"></span><span data-i18n="where1">本页所有计算发生在</span> <b data-i18n="where2">你自己电脑的 GPU</b> <span data-i18n="where3">上 —— 数据不出浏览器</span></div>
+  </header>
+
+  <div class="switchbar">
+    <span class="sw-label" id="labCpu" data-i18n="cpuLabel">CPU</span>
+    <div class="switch" id="switch" data-mode="gpu" role="switch" tabindex="0" aria-label="GPU 与 CPU 切换">
+      <div class="knob" id="knob">GPU</div>
+    </div>
+    <span class="sw-label on" id="labGpu" data-i18n="gpuLabel">GPU (WebGPU)</span>
+  </div>
+  <p class="hint" id="hint" data-i18n="hint">切到 CPU 试试 —— 负载一上去，画面会明显变卡，这就是差距 🔥</p>
+
+  <div class="tabs">
+    <div class="tab active" data-demo="attract"><span class="ic">✨</span><span data-i18n="t_attract">粒子吸引子</span></div>
+    <div class="tab" data-demo="mandel"><span class="ic">🌀</span><span data-i18n="t_mandel">曼德勃罗分形</span></div>
+    <div class="tab" data-demo="conv"><span class="ic">🖼️</span><span data-i18n="t_conv">图像卷积</span></div>
+    <div class="tab" data-demo="video"><span class="ic">🎞️</span><span data-i18n="t_video">视频特效</span></div>
+  </div>
+
+  <div class="stage">
+    <canvas id="cv" width="900" height="540"></canvas>
+    <div class="badge gpu" id="badge">GPU</div>
+    <div class="fps" id="fps">— fps</div>
+    <video id="vid" class="vid-win" muted autoplay loop playsinline></video>
+    <div class="vid-tag" id="vidTag" data-i18n="vidtag">↑ 正在播放的视频源</div>
+  </div>
+
+  <div class="panel">
+    <div class="sliders" id="sliders"></div>
+    <div class="row" id="row"></div>
+    <div class="note" id="note"></div>
+  </div>
+
+  <!-- 详细使用方法 -->
+  <section class="usage">
+    <h2>📘 <span data-i18n="usage_title">怎么玩 · 使用说明</span></h2>
+    <p class="lead" data-i18n="usage_lead">moxwebgpu 把计算下推到你的浏览器：打开网页，网页就用你电脑里的 GPU 做并行计算。服务器只发一个网页，数据全程不离开你的机器。</p>
+
+    <h3>🎛️ <span data-i18n="u_step1_t">第一步 · 切换 GPU / CPU</span></h3>
+    <ul>
+      <li data-i18n="u_step1_a">顶部中间的开关：<b>GPU ⇄ CPU</b> 一键切换。同一份计算，GPU 模式下右上角的 <b>帧率 (fps)</b> 会明显更高、画面更顺。</li>
+      <li data-i18n="u_step1_b">开关旁边的 <b>ms/帧</b> 是单帧耗时，数值越低越快。</li>
+    </ul>
+
+    <h3>🧩 <span data-i18n="u_step2_t">第二步 · 选一个画面</span></h3>
+    <ul>
+      <li><span class="tag">✨ 粒子</span><span data-i18n="u_step2_attract">几万到几十万个粒子每帧迭代，轨迹累加成密度图。把「粒子数 / 每帧步数」拉满，差距最夸张。</span></li>
+      <li><span class="tag">🌀 分形</span><span data-i18n="u_step2_mandel">每个像素独立做逃逸迭代。把「迭代上限」拉到 800，一帧就是数亿次运算。</span></li>
+      <li><span class="tag">🖼️ 卷积</span><span data-i18n="u_step2_conv">非分离 2D 卷积（模糊/锐化/边缘/浮雕）。核开到 31×31，单帧 4.8 亿次乘加。</span></li>
+      <li><span class="tag">🎞️ 视频</span><span data-i18n="u_step2_video">页面里有一个正在播放的视频，GPU 对每一帧实时做滤镜。可上传你自己的视频。</span></li>
+    </ul>
+
+    <h3>🎚️ <span data-i18n="u_step3_t">第三步 · 拖滑杆、传文件</span></h3>
+    <ul>
+      <li data-i18n="u_step3_a">拖动面板里的滑杆，画面实时变化。</li>
+      <li data-i18n="u_step3_b">🖼️ 卷积 和 🎞️ 视频 都能点按钮用<b>你自己的图片 / 视频</b>。</li>
+      <li data-i18n="u_step3_c">「暂停 / 继续」「重置」随时控制；右下角是视频源小窗。</li>
+    </ul>
+
+    <h3>🌐 <span data-i18n="u_step4_t">在哪能跑</span></h3>
+    <div class="grid2">
+      <ul>
+        <li data-i18n="u_step4_a">✅ Chrome / Edge 113+</li>
+        <li data-i18n="u_step4_b">✅ 安卓 Chrome</li>
+        <li data-i18n="u_step4_c">✅ 部分 Firefox / Safari（需开启 WebGPU 实验开关）</li>
+      </ul>
+      <ul>
+        <li data-i18n="u_step4_d">⚠️ 不支持的浏览器会<b>自动降到 CPU 模式</b>（功能一样，只是慢）。</li>
+        <li data-i18n="u_step4_e">⚠️ 需要在 <code>https</code> 或 <code>localhost</code> 安全上下文下打开。</li>
+      </ul>
+    </div>
+
+    <h3>⚡ <span data-i18n="u_step5_t">技术说明</span></h3>
+    <ul>
+      <li data-i18n="u_step5_a">纯前端、零后端、零数据上传。GPU 计算由 <b>moxwebgpu</b> 框架驱动（WebGPU 通用计算 / GPGPU）。</li>
+      <li data-i18n="u_step5_b">想看代码？右上角语言切换旁边没有，但页面底部有 GitHub 链接 🔗。</li>
+    </ul>
+  </section>
+
+  <p class="status" id="status">🚀 正在初始化…</p>
+
+  <footer>
+    <span class="emoji">⚡</span> moxwebgpu —— Mox 系列 · 零依赖 WebGPU 通用计算框架<br>
+    <a href="https://github.com/codecloud-dev/moxwebgpu" target="_blank" rel="noopener">GitHub</a>
+  </footer>
+</div>
+
+<!-- 视频源：程序生成的动画（捕获成视频流喂给 <video>） -->
+<canvas id="vsrc" width="800" height="500" style="display:none"></canvas>
+
+<script src="./moxwebgpu.browser.js"></script>
+<script>
+/* =========================================================================
+   三个 demo（含视频）+ CPU 对照，共用一套骨架。
+   GPU 路径：原始 WGSL 经 moxwebgpu 的 Kernel 逃生舱下发；
+   CPU 路径：完全等价的普通 JS 循环。两者输出同一种中间结果再走同一段
+   渲染代码，所以画面一致，时间差只来自「谁在算」。
+   ========================================================================= */
+
+const cv = document.getElementById('cv');
+const ctx2d = cv.getContext('2d', { alpha: false, willReadFrequently: true });
+const W = cv.width, H = cv.height;
+const PIXELS = W * H;
+const imgData = ctx2d.createImageData(W, H);
+
+let mode = 'gpu';
+let demo = 'attract';
+let gpu = null;
+let running = true;
+let rafId = 0;
+
+const fpsEl = document.getElementById('fps');
+const frames = [];
+let lastFrameMs = 0;
+function tickFps(t) {
+  frames.push(t);
+  while (frames.length && frames[0] < t - 1000) frames.shift();
+  fpsEl.innerHTML = `<b>${frames.length}</b> fps <span class="ms">· ${lastFrameMs.toFixed(1)} ms/帧</span>`;
+  fpsEl.style.color = frames.length >= 50 ? '' : (frames.length >= 20 ? 'var(--amber)' : 'var(--red)');
+}
+
+/* ---------------- Demo 1 · 粒子吸引子 (Peter de Jong) ---------------- */
+const attract = {
+  name: 'attract',
+  params: [
+    { key: 'n',     label: { zh: '粒子数', en: 'Particles' }, min: 5000, max: 400000, step: 5000, value: 120000, fmt: v => v.toLocaleString() },
+    { key: 'steps', label: { zh: '每帧步数', en: 'Steps/frame' }, min: 1, max: 60, step: 1, value: 16 },
+    { key: 'decay', label: { zh: '拖尾保留', en: 'Trail' }, min: 0.80, max: 1.0, step: 0.01, value: 0.96, fmt: v => v.toFixed(2) },
+  ],
+  paramsEn: [],
+  cpuState: null, gpuState: null, gpuDensity: null, gpuUbo: null, kernel: null,
+  density: new Uint32Array(PIXELS),
+  wgsl: `
+struct P { n: u32, steps: u32, w: u32, h: u32, a: f32, b: f32, c: f32, d: f32, scale: f32, ox: f32, oy: f32, pad: f32 };
+@group(0) @binding(0) var<uniform> p: P;
+@group(0) @binding(1) var<storage, read_write> state: array<f32>;
+@group(0) @binding(2) var<storage, read_write> dens: array<atomic<u32>>;
+fn evolve(x: f32, y: f32) -> vec2<f32> {
+  return vec2<f32>(sin(p.a * y) - cos(p.b * x), sin(p.c * x) - cos(p.d * y));
+}
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let i = gid.x;
+  if (i >= p.n) { return; }
+  var x = state[i * 2u];
+  var y = state[i * 2u + 1u];
+  for (var s = 0u; s < p.steps; s = s + 1u) {
+    let nx = evolve(x, y);
+    x = nx.x; y = nx.y;
+    let px = i32((x * p.scale + p.ox) * f32(p.w));
+    let py = i32((y * p.scale + p.oy) * f32(p.h));
+    if (px >= 0 && px < i32(p.w) && py >= 0 && py < i32(p.h)) {
+      atomicAdd(&dens[u32(py) * p.w + u32(px)], 1u);
+    }
+  }
+  state[i * 2u] = x;
+  state[i * 2u + 1u] = y;
+}`,
+  reset() { this.cpuState = null; this.density.fill(0); if (this.gpuState) { const st = new Float32Array(this.gpuState.elements); for (let i = 0; i < st.length; i++) st[i] = Math.random() * 2 - 1; gpu.queue.writeBuffer(this.gpuState.buffer, 0, st); } },
+  ensureGpu(P) {
+    if (!this.gpuState || this.gpuState.elements < P.n * 2) {
+      if (this.gpuState) gpu.pool.release(this.gpuState);
+      this.gpuState = gpu.pool.acquire(P.n * 2, 'f32');
+      const st = new Float32Array(P.n * 2);
+      for (let i = 0; i < st.length; i++) st[i] = Math.random() * 2 - 1;
+      gpu.queue.writeBuffer(this.gpuState.buffer, 0, st);
+    }
+    if (!this.gpuDensity) this.gpuDensity = gpu.pool.acquire(PIXELS, 'u32');
+    if (!this.gpuUbo) this.gpuUbo = gpu.pool.acquireUniform(48);
+    if (!this.kernel) this.kernel = gpu.kernel(this.wgsl, { workgroupSize: 64 });
+  },
+  async stepGpu(P) {
+    this.ensureGpu(P);
+    gpu.queue.writeBuffer(this.gpuDensity.buffer, 0, new Uint32Array(this.gpuDensity.elements));
+    const ab = new ArrayBuffer(48);
+    const u = new Uint32Array(ab), f = new Float32Array(ab);
+    u[0] = P.n; u[1] = P.steps; u[2] = W; u[3] = H;
+    const t = performance.now() / 14000;
+    f[4] = 1.4 + Math.sin(t) * 0.55; f[5] = -2.3 + Math.cos(t * 0.77) * 0.5;
+    f[6] = 2.4 + Math.sin(t * 1.13) * 0.45; f[7] = -2.1 + Math.cos(t * 0.91) * 0.5;
+    f[8] = 0.42; f[9] = 0.5; f[10] = 0.5; f[11] = 0;
+    gpu.queue.writeBuffer(this.gpuUbo, 0, ab);
+    this.kernel.dispatch([this.gpuUbo, this.gpuState, this.gpuDensity], [Math.ceil(P.n / 64), 1, 1]);
+    const out = await gpu.readback(this.gpuDensity);
+    this.density.set(out);
+  },
+  stepCpu(P) {
+    if (!this.cpuState || this.cpuState.length < P.n * 2) {
+      const st = new Float32Array(P.n * 2);
+      for (let i = 0; i < st.length; i++) st[i] = Math.random() * 2 - 1;
+      this.cpuState = st;
+    }
+    const st = this.cpuState, dens = this.density; dens.fill(0);
+    const t = performance.now() / 14000;
+    const a = 1.4 + Math.sin(t) * 0.55, b = -2.3 + Math.cos(t * 0.77) * 0.5;
+    const c = 2.4 + Math.sin(t * 1.13) * 0.45, d = -2.1 + Math.cos(t * 0.91) * 0.5;
+    const scale = 0.42, ox = 0.5, oy = 0.5;
+    for (let i = 0; i < P.n; i++) {
+      let x = st[i * 2], y = st[i * 2 + 1];
+      for (let s = 0; s < P.steps; s++) {
+        const nx = Math.sin(a * y) - Math.cos(b * x);
+        const ny = Math.sin(c * x) - Math.cos(d * y);
+        x = nx; y = ny;
+        const px = ((x * scale + ox) * W) | 0, py = ((y * scale + oy) * H) | 0;
+        if (px >= 0 && px < W && py >= 0 && py < H) dens[py * W + px]++;
+      }
+      st[i * 2] = x; st[i * 2 + 1] = y;
+    }
+  },
+  render() {
+    const dens = this.density, data = imgData.data;
+    let maxD = 1; for (let i = 0; i < dens.length; i++) if (dens[i] > maxD) maxD = dens[i];
+    const inv = 1 / Math.log(1 + maxD);
+    for (let i = 0, o = 0; i < dens.length; i++, o += 4) {
+      if (dens[i] === 0) { data[o] = 6; data[o+1] = 7; data[o+2] = 11; data[o+3] = 255; continue; }
+      const v = Math.log(1 + dens[i]) * inv, g = v * v;
+      data[o] = (30 + 200 * g) | 0;
+      data[o+1] = (40 + 190 * Math.pow(v, 1.3)) | 0;
+      data[o+2] = (60 + 195 * Math.pow(v, 0.8)) | 0;
+      data[o+3] = 255;
+    }
+    ctx2d.putImageData(imgData, 0, 0);
+  },
+};
+
+/* ---------------- Demo 2 · 曼德勃罗分形 ---------------- */
+const mandel = {
+  name: 'mandel',
+  params: [
+    { key: 'iter', label: { zh: '迭代上限', en: 'Max iter' }, min: 50, max: 1200, step: 50, value: 300 },
+    { key: 'zoom', label: { zh: '缩放', en: 'Zoom' }, min: 0.15, max: 2.0, step: 0.05, value: 1.0, fmt: v => v.toFixed(2) + '×' },
+    { key: 'cx', label: { zh: '中心 X', en: 'Center X' }, min: -1.2, max: 0.4, step: 0.01, value: -0.6, fmt: v => v.toFixed(2) },
+  ],
+  out: new Float32Array(PIXELS), gpuOut: null, gpuUbo: null, kernel: null,
+  wgsl: `
+struct P { w: u32, h: u32, maxIter: u32, pad: u32, cx: f32, cy: f32, scale: f32, pad2: f32 };
+@group(0) @binding(0) var<uniform> p: P;
+@group(0) @binding(1) var<storage, read_write> out: array<f32>;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let idx = gid.x;
+  if (idx >= p.w * p.h) { return; }
+  let w = f32(p.w); let h = f32(p.h);
+  let px = f32(idx % p.w); let py = f32(idx / p.w);
+  let re = p.cx + (px / w - 0.5) * p.scale * 3.0;
+  let im = p.cy + (py / h - 0.5) * p.scale * 3.0 * (h / w);
+  var zr = 0.0; var zi = 0.0; var i = 0u;
+  for (var k = 0u; k < p.maxIter; k = k + 1u) {
+    let zr2 = zr * zr; let zi2 = zi * zi;
+    if (zr2 + zi2 > 4.0) { break; }
+    zi = 2.0 * zr * zi + im; zr = zr2 - zi2 + re; i = i + 1u;
+  }
+  let zr2 = zr * zr; let zi2 = zi * zi;
+  let mu = f32(i) + 1.0 - log2(max(log2(max(zr2 + zi2, 1.0001)), 0.0001));
+  out[idx] = select(f32(p.maxIter), mu, i < p.maxIter);
+}`,
+  reset() {},
+  ensureGpu() { if (!this.gpuOut) this.gpuOut = gpu.pool.acquire(PIXELS, 'f32'); if (!this.gpuUbo) this.gpuUbo = gpu.pool.acquireUniform(32); if (!this.kernel) this.kernel = gpu.kernel(this.wgsl, { workgroupSize: 64 }); },
+  async stepGpu(P) {
+    this.ensureGpu();
+    const ab = new ArrayBuffer(32);
+    new Uint32Array(ab).set([W, H, P.iter, 0]);
+    new Float32Array(ab).set([P.cx, 0, P.zoom, 0], 4);
+    gpu.queue.writeBuffer(this.gpuUbo, 0, ab);
+    this.kernel.dispatch([this.gpuUbo, this.gpuOut], [Math.ceil(PIXELS / 64), 1, 1]);
+    const out = await gpu.readback(this.gpuOut);
+    this.out.set(out.subarray(0, PIXELS));
+  },
+  stepCpu(P) {
+    const out = this.out, cx = P.cx, cy = 0, scale = P.zoom * 3.0, aspect = H / W, maxIter = P.iter;
+    for (let py = 0; py < H; py++) {
+      const im = cy + (py / H - 0.5) * scale * aspect, row = py * W;
+      for (let px = 0; px < W; px++) {
+        const re = cx + (px / W - 0.5) * scale;
+        let zr = 0, zi = 0, i = 0;
+        for (; i < maxIter; i++) { const zr2 = zr * zr, zi2 = zi * zi; if (zr2 + zi2 > 4) break; zi = 2 * zr * zi + im; zr = zr2 - zi2 + re; }
+        if (i >= maxIter) { out[row + px] = maxIter; continue; }
+        const mag = Math.max(zr * zr + zi * zi, 1.0001);
+        out[row + px] = i + 1 - Math.log2(Math.max(Math.log2(mag), 0.0001));
+      }
+    }
+  },
+  render() {
+    const out = this.out, data = imgData.data, maxIter = Math.max(1, params.mandel.iter);
+    for (let i = 0, o = 0; i < PIXELS; i++, o += 4) {
+      const v = out[i];
+      if (v >= maxIter) { data[o] = 4; data[o+1] = 5; data[o+2] = 9; data[o+3] = 255; continue; }
+      const t = v / maxIter, s = Math.pow(t, 0.55);
+      data[o] = (10 + 235 * Math.pow(s, 1.6)) | 0;
+      data[o+1] = (25 + 150 * Math.sin(s * Math.PI)) | 0;
+      data[o+2] = (60 + 190 * Math.pow(1 - s, 1.2)) | 0;
+      data[o+3] = 255;
+    }
+    ctx2d.putImageData(imgData, 0, 0);
+  },
+};
+
+/* ---------------- Demo 3 · 图像卷积（非分离 2D） ---------------- */
+const KERNELS = {
+  blur:   { label: { zh: '高斯模糊', en: 'Gaussian blur' }, build: r => { const k = []; let s = 0; const sig = Math.max(r / 2, 0.5); for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) { const v = Math.exp(-(x*x + y*y) / (2*sig*sig)); k.push(v); s += v; } return k.map(v => v / s); } },
+  sharp:  { label: { zh: '锐化', en: 'Sharpen' }, build: r => { const k = []; const n = 2*r + 1; for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) k.push((x === 0 && y === 0) ? 2 : -1 / (n*n - 1)); return k; } },
+  edge:   { label: { zh: '边缘检测', en: 'Edge detect' }, build: r => { const k = []; const n = 2*r + 1; for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) k.push((x === 0 && y === 0) ? n*n - 1 : -1); return k; } },
+  emboss: { label: { zh: '浮雕', en: 'Emboss' }, build: r => { const k = []; for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) k.push(x === y ? 1 : (x === -y ? -1 : 0)); return k; } },
+};
+const conv = {
+  name: 'conv',
+  params: [
+    { key: 'radius', label: { zh: '卷积核半径', en: 'Kernel radius' }, min: 1, max: 15, step: 1, value: 7, fmt: v => `${2*v+1}×${2*v+1}` },
+  ],
+  src: null, out: new Float32Array(PIXELS * 4),
+  gpuSrc: null, gpuOut: null, gpuUbo: null, gpuKern: null, kernel: null, kind: 'blur',
+  wgsl: `
+struct P { w: u32, h: u32, r: u32, pad: u32 };
+@group(0) @binding(0) var<uniform> p: P;
+@group(0) @binding(1) var<storage, read> src: array<f32>;
+@group(0) @binding(2) var<storage, read> kern: array<f32>;
+@group(0) @binding(3) var<storage, read_write> out: array<f32>;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let idx = gid.x;
+  if (idx >= p.w * p.h) { return; }
+  let w = i32(p.w); let h = i32(p.h); let r = i32(p.r);
+  let px = i32(idx % p.w); let py = i32(idx / p.w);
+  let kw = 2 * r + 1;
+  var acc = array<f32, 4>(0.0, 0.0, 0.0, 0.0);
+  var ky = 0;
+  for (var dy = -r; dy <= r; dy = dy + 1) {
+    let sy = clamp(py + dy, 0, h - 1);
+    var kx = 0;
+    for (var dx = -r; dx <= r; dx = dx + 1) {
+      let sx = clamp(px + dx, 0, w - 1);
+      let kv = kern[ky * kw + kx];
+      let si = (sy * w + sx) * 4;
+      acc[0] = acc[0] + src[si] * kv;
+      acc[1] = acc[1] + src[si + 1] * kv;
+      acc[2] = acc[2] + src[si + 2] * kv;
+      acc[3] = acc[3] + src[si + 3] * kv;
+      kx = kx + 1;
+    }
+    ky = ky + 1;
+  }
+  let o = idx * 4;
+  out[o] = acc[0]; out[o + 1] = acc[1]; out[o + 2] = acc[2]; out[o + 3] = acc[3];
+}`,
+  makeSrc() {
+    const s = new Float32Array(PIXELS * 4);
+    let seed = 20261002;
+    const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4, u = x / W, v = y / H;
+      const ring = Math.sin(Math.hypot(u - 0.5, v - 0.5) * 46) * 0.5 + 0.5;
+      const board = ((x >> 4) + (y >> 4)) & 1 ? 0.18 : 0;
+      const n = rnd() * 0.22;
+      s[i] = Math.min(1, 0.25 + u * 0.55 + ring * 0.22 + board + n);
+      s[i+1] = Math.min(1, 0.18 + v * 0.5 + (1 - ring) * 0.25 + board + n);
+      s[i+2] = Math.min(1, 0.35 + (1 - u) * 0.5 + ring * 0.3 + board * 0.6 + n);
+      s[i+3] = 1;
+    }
+    this.src = s; return s;
+  },
+  reset() { this.gpuSrc = null; this.src = null; },
+  ensureGpu(P, kernArr) {
+    if (!this.src) this.makeSrc();
+    if (!this.gpuSrc) { this.gpuSrc = gpu.pool.acquire(PIXELS * 4, 'f32'); gpu.queue.writeBuffer(this.gpuSrc.buffer, 0, this.src); }
+    if (!this.gpuOut) this.gpuOut = gpu.pool.acquire(PIXELS * 4, 'f32');
+    if (!this.gpuKern || this.gpuKern.elements < kernArr.length) {
+      if (this.gpuKern) gpu.pool.release(this.gpuKern);
+      this.gpuKern = gpu.pool.acquire(kernArr.length, 'f32');
+    }
+    gpu.queue.writeBuffer(this.gpuKern.buffer, 0, new Float32Array(kernArr));
+    if (!this.gpuUbo) this.gpuUbo = gpu.pool.acquireUniform(16);
+    if (!this.kernel) this.kernel = gpu.kernel(this.wgsl, { workgroupSize: 64 });
+  },
+  async stepGpu(P) {
+    const kernArr = KERNELS[this.kind].build(P.radius);
+    this.ensureGpu(P, kernArr);
+    new Uint32Array(16).set([W, H, P.radius, 0]);
+    gpu.queue.writeBuffer(this.gpuUbo, 0, new Uint32Array([W, H, P.radius, 0]).buffer);
+    this.kernel.dispatch([this.gpuUbo, this.gpuSrc, this.gpuKern, this.gpuOut], [Math.ceil(PIXELS / 64), 1, 1]);
+    const out = await gpu.readback(this.gpuOut);
+    this.out.set(out.subarray(0, PIXELS * 4));
+  },
+  stepCpu(P) {
+    if (!this.src) this.makeSrc();
+    const kernArr = KERNELS[this.kind].build(P.radius), src = this.src, out = this.out, r = P.radius, kw = 2 * r + 1;
+    for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
+      let a0 = 0, a1 = 0, a2 = 0, a3 = 0;
+      for (let dy = -r; dy <= r; dy++) {
+        const sy = Math.min(H - 1, Math.max(0, py + dy)), krow = (dy + r) * kw;
+        for (let dx = -r; dx <= r; dx++) {
+          const sx = Math.min(W - 1, Math.max(0, px + dx)), kv = kernArr[krow + dx + r], si = (sy * W + sx) * 4;
+          a0 += src[si] * kv; a1 += src[si + 1] * kv; a2 += src[si + 2] * kv; a3 += src[si + 3] * kv;
+        }
+      }
+      const o = (py * W + px) * 4; out[o] = a0; out[o+1] = a1; out[o+2] = a2; out[o+3] = a3;
+    }
+  },
+  render() {
+    const out = this.out, data = imgData.data;
+    for (let i = 0; i < PIXELS * 4; i++) { let v = out[i]; if (v < 0) v = 0; else if (v > 1) v = 1; data[i] = (v * 255) | 0; }
+    ctx2d.putImageData(imgData, 0, 0);
+  },
+};
+
+/* ---------------- Demo 4 · 视频特效（实时滤镜） ---------------- */
+const video = {
+  name: 'video',
+  params: [
+    { key: 'radius', label: { zh: '滤镜半径', en: 'Filter radius' }, min: 1, max: 12, step: 1, value: 4, fmt: v => `${2*v+1}×${2*v+1}` },
+  ],
+  src: null, out: new Float32Array(PIXELS * 4),
+  gpuSrc: null, gpuOut: null, gpuUbo: null, gpuKern: null, kernel: null, kind: 'blur',
+  grabCanvas: null, grabCtx: null,
+  wgsl: conv.wgsl,
+  reset() { this.gpuSrc = null; },
+  ensureGpu(P, kernArr) {
+    if (!this.gpuSrc) this.gpuSrc = gpu.pool.acquire(PIXELS * 4, 'f32');
+    if (!this.gpuOut) this.gpuOut = gpu.pool.acquire(PIXELS * 4, 'f32');
+    if (!this.gpuKern || this.gpuKern.elements < kernArr.length) {
+      if (this.gpuKern) gpu.pool.release(this.gpuKern);
+      this.gpuKern = gpu.pool.acquire(kernArr.length, 'f32');
+    }
+    gpu.queue.writeBuffer(this.gpuKern.buffer, 0, new Float32Array(kernArr));
+    if (!this.gpuUbo) this.gpuUbo = gpu.pool.acquireUniform(16);
+    if (!this.kernel) this.kernel = gpu.kernel(this.wgsl, { workgroupSize: 64 });
+  },
+  grab() {
+    if (!this.grabCanvas) { this.grabCanvas = document.createElement('canvas'); this.grabCanvas.width = W; this.grabCanvas.height = H; this.grabCtx = this.grabCanvas.getContext('2d', { willReadFrequently: true }); }
+    const vid = document.getElementById('vid');
+    try { this.grabCtx.drawImage(vid, 0, 0, W, H); } catch (e) { return false; }
+    const px = this.grabCtx.getImageData(0, 0, W, H).data;
+    const f = new Float32Array(PIXELS * 4);
+    for (let i = 0; i < f.length; i++) f[i] = px[i] / 255;
+    this.src = f;
+    return true;
+  },
+  async stepGpu(P) {
+    if (!this.grab()) return;
+    const kernArr = KERNELS[this.kind].build(P.radius);
+    this.ensureGpu(P, kernArr);
+    gpu.queue.writeBuffer(this.gpuSrc.buffer, 0, this.src);
+    gpu.queue.writeBuffer(this.gpuUbo, 0, new Uint32Array([W, H, P.radius, 0]).buffer);
+    this.kernel.dispatch([this.gpuUbo, this.gpuSrc, this.gpuKern, this.gpuOut], [Math.ceil(PIXELS / 64), 1, 1]);
+    const out = await gpu.readback(this.gpuOut);
+    this.out.set(out.subarray(0, PIXELS * 4));
+  },
+  stepCpu(P) {
+    if (!this.grab()) return;
+    const kernArr = KERNELS[this.kind].build(P.radius), src = this.src, out = this.out, r = P.radius, kw = 2 * r + 1;
+    for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
+      let a0 = 0, a1 = 0, a2 = 0, a3 = 0;
+      for (let dy = -r; dy <= r; dy++) {
+        const sy = Math.min(H - 1, Math.max(0, py + dy)), krow = (dy + r) * kw;
+        for (let dx = -r; dx <= r; dx++) {
+          const sx = Math.min(W - 1, Math.max(0, px + dx)), kv = kernArr[krow + dx + r], si = (sy * W + sx) * 4;
+          a0 += src[si] * kv; a1 += src[si + 1] * kv; a2 += src[si + 2] * kv; a3 += src[si + 3] * kv;
+        }
+      }
+      const o = (py * W + px) * 4; out[o] = a0; out[o+1] = a1; out[o+2] = a2; out[o+3] = a3;
+    }
+  },
+  render() {
+    const out = this.out, data = imgData.data;
+    for (let i = 0; i < PIXELS * 4; i++) { let v = out[i]; if (v < 0) v = 0; else if (v > 1) v = 1; data[i] = (v * 255) | 0; }
+    ctx2d.putImageData(imgData, 0, 0);
+  },
+};
+
+/* =========================================================================
+   参数状态 / UI
+   ========================================================================= */
+const DEMOS = { attract, mandel, conv, video };
+const params = {};
+for (const k in DEMOS) { params[k] = {}; for (const p of DEMOS[k].params) params[k][p.key] = p.value; }
+
+const slidersEl = document.getElementById('sliders');
+const rowEl = document.getElementById('row');
+const noteEl = document.getElementById('note');
+
+function buildUI() {
+  const d = DEMOS[demo];
+  slidersEl.innerHTML = '';
+  for (const p of d.params) {
+    const wrap = document.createElement('div'); wrap.className = 'sl';
+    const val = params[demo][p.key];
+    wrap.innerHTML = `<label>${typeof p.label === 'object' ? p.label[L] : p.label}<span>${(p.fmt ? p.fmt(val) : val)}</span></label><input type="range" min="${p.min}" max="${p.max}" step="${p.step}" value="${val}">`;
+    const input = wrap.querySelector('input');
+    input.oninput = () => { params[demo][p.key] = parseFloat(input.value); wrap.querySelector('span').textContent = p.fmt ? p.fmt(params[demo][p.key]) : params[demo][p.key]; if (demo === 'conv' || demo === 'video') DEMOS[demo].reset(); };
+    slidersEl.appendChild(wrap);
+  }
+  rowEl.innerHTML = '';
+  if (demo === 'conv' || demo === 'video') {
+    const sel = document.createElement('select');
+    for (const k in KERNELS) { const o = document.createElement('option'); o.value = k; o.textContent = KERNELS[k].label[L]; if (k === DEMOS[demo].kind) o.selected = true; sel.appendChild(o); }
+    sel.onchange = () => { DEMOS[demo].kind = sel.value; };
+    rowEl.appendChild(sel);
+    const up = document.createElement('label'); up.className = 'btn'; up.textContent = (L === 'zh' ? '📁 用我自己的' : '📁 Use my own');
+    const file = document.createElement('input'); file.type = 'file'; file.accept = demo === 'video' ? 'video/*' : 'image/*'; file.style.display = 'none';
+    file.onchange = () => {
+      const f = file.files[0]; if (!f) return;
+      const url = URL.createObjectURL(f);
+      if (demo === 'video') {
+        const vid = document.getElementById('vid'); vid.src = url; vid.play().catch(() => {});
+        status((L === 'zh' ? '已载入你的视频，GPU 正在逐帧处理 🎬' : 'Your video loaded — GPU is processing each frame 🎬'));
+      } else {
+        const im = new Image(); im.onload = () => {
+          const c = document.createElement('canvas'); c.width = W; c.height = H; const cx = c.getContext('2d'); cx.drawImage(im, 0, 0, W, H);
+          const px = cx.getImageData(0, 0, W, H).data, s = new Float32Array(PIXELS * 4);
+          for (let i = 0; i < s.length; i++) s[i] = px[i] / 255;
+          conv.src = s; conv.gpuSrc = null; status(L === 'zh' ? '已载入你的图片' : 'Your image loaded');
+        }; im.src = url;
+      }
+    };
+    up.appendChild(file); rowEl.appendChild(up);
+  }
+  const rb = document.createElement('button'); rb.className = 'btn'; rb.textContent = L === 'zh' ? '🔄 重置' : '🔄 Reset'; rb.onclick = () => DEMOS[demo].reset();
+  rowEl.appendChild(rb);
+  const pb = document.createElement('button'); pb.className = 'btn primary'; pb.textContent = running ? (L === 'zh' ? '⏸ 暂停' : '⏸ Pause') : (L === 'zh' ? '▶ 继续' : '▶ Resume');
+  pb.onclick = () => { running = !running; pb.textContent = running ? (L === 'zh' ? '⏸ 暂停' : '⏸ Pause') : (L === 'zh' ? '▶ 继续' : '▶ Resume'); if (running) loop(); };
+  rowEl.appendChild(pb);
+  noteEl.textContent = NOTES[demo][L];
+  // 视频小窗显隐
+  document.getElementById('vid').classList.toggle('show', demo === 'video');
+  document.getElementById('vidTag').classList.toggle('show', demo === 'video');
+}
+
+/* =========================================================================
+   切换 / 语言
+   ========================================================================= */
+const switchEl = document.getElementById('switch');
+const knobEl = document.getElementById('knob');
+const badgeEl = document.getElementById('badge');
+const labCpu = document.getElementById('labCpu');
+const labGpu = document.getElementById('labGpu');
+const hintEl = document.getElementById('hint');
+
+function setMode(m) {
+  mode = m; switchEl.dataset.mode = m; knobEl.textContent = m === 'gpu' ? 'GPU' : 'CPU';
+  badgeEl.textContent = m === 'gpu' ? (L === 'zh' ? 'GPU' : 'GPU') : (L === 'zh' ? 'CPU' : 'CPU');
+  badgeEl.className = 'badge ' + m;
+  labCpu.classList.toggle('on', m === 'cpu'); labGpu.classList.toggle('on', m === 'gpu');
+  DEMOS[demo].reset();
+}
+switchEl.onclick = () => setMode(mode === 'gpu' ? 'cpu' : 'gpu');
+switchEl.onkeydown = e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setMode(mode === 'gpu' ? 'cpu' : 'gpu'); } };
+
+for (const t of document.querySelectorAll('.tab')) t.onclick = () => {
+  for (const x of document.querySelectorAll('.tab')) x.classList.remove('active');
+  t.classList.add('active'); demo = t.dataset.demo; DEMOS[demo].reset(); buildUI();
+};
+
+const statusEl = document.getElementById('status');
+function status(html, warn) { statusEl.innerHTML = html; statusEl.className = 'status' + (warn ? ' warn' : ''); }
+function showBanner(show, text) { const b = document.getElementById('banner'); b.classList.toggle('hidden', !show); if (text) document.getElementById('banner-text').textContent = text; }
+
+/* i18n */
+const I18N = {
+  zh: {
+    title: 'moxwebgpu', sub: '三个实时演示 · 一个视频特效 · GPU 与 CPU 一键切换 · 差距肉眼可见',
+    where1: '本页所有计算发生在', where2: '你自己电脑的 GPU', where3: '上 —— 数据不出浏览器',
+    cpuLabel: 'CPU', gpuLabel: 'GPU (WebGPU)',
+    hint: '切到 CPU 试试 —— 负载一上去，画面会明显变卡，这就是差距 🔥',
+    t_attract: '粒子吸引子', t_mandel: '曼德勃罗分形', t_conv: '图像卷积', t_video: '视频特效',
+    vidtag: '↑ 正在播放的视频源',
+    usage_title: '怎么玩 · 使用说明', usage_lead: 'moxwebgpu 把计算下推到你的浏览器：打开网页，网页就用你电脑里的 GPU 做并行计算。服务器只发一个网页，数据全程不离开你的机器。',
+    u_step1_t: '第一步 · 切换 GPU / CPU', u_step1_a: '顶部中间的开关：GPU ⇄ CPU 一键切换。同一份计算，GPU 模式下右上角的 帧率 (fps) 会明显更高、画面更顺。', u_step1_b: '开关旁边的 ms/帧 是单帧耗时，数值越低越快。',
+    u_step2_t: '第二步 · 选一个画面', u_step2_attract: '几万到几十万个粒子每帧迭代，轨迹累加成密度图。把「粒子数 / 每帧步数」拉满，差距最夸张。', u_step2_mandel: '每个像素独立做逃逸迭代。把「迭代上限」拉到 800，一帧就是数亿次运算。', u_step2_conv: '非分离 2D 卷积（模糊/锐化/边缘/浮雕）。核开到 31×31，单帧 4.8 亿次乘加。', u_step2_video: '页面里有一个正在播放的视频，GPU 对每一帧实时做滤镜。可上传你自己的视频。',
+    u_step3_t: '第三步 · 拖滑杆、传文件', u_step3_a: '拖动面板里的滑杆，画面实时变化。', u_step3_b: '🖼️ 卷积 和 🎞️ 视频 都能点按钮用你自己的图片 / 视频。', u_step3_c: '「暂停 / 继续」「重置」随时控制；右下角是视频源小窗。',
+    u_step4_t: '在哪能跑', u_step4_a: 'Chrome / Edge 113+', u_step4_b: '安卓 Chrome', u_step4_c: '部分 Firefox / Safari（需开启 WebGPU 实验开关）', u_step4_d: '不支持的浏览器会自动降到 CPU 模式（功能一样，只是慢）。', u_step4_e: '需要在 https 或 localhost 安全上下文下打开。',
+    u_step5_t: '技术说明', u_step5_a: '纯前端、零后端、零数据上传。GPU 计算由 moxwebgpu 框架驱动（WebGPU 通用计算 / GPGPU）。', u_step5_b: '想看代码？页面底部有 GitHub 链接 🔗。',
+    banner: '⚠️ 你的浏览器不支持 WebGPU，已自动切换到 CPU 模式 —— 功能一样，只是慢一些。换 Chrome / Edge 113+ 解锁 GPU 加速。',
+  },
+  en: {
+    title: 'moxwebgpu', sub: 'Three live demos · one video effect · one-tap GPU / CPU switch · the gap is visible',
+    where1: 'Every calculation here runs on', where2: 'the GPU in YOUR computer', where3: '— nothing leaves your browser',
+    cpuLabel: 'CPU', gpuLabel: 'GPU (WebGPU)',
+    hint: 'Flip it to CPU — under load the picture visibly stutters. That gap is the point 🔥',
+    t_attract: 'Particle Attractor', t_mandel: 'Mandelbrot', t_conv: 'Image Convolve', t_video: 'Video FX',
+    vidtag: '↑ the source video being played',
+    usage_title: 'How to play · Usage', usage_lead: 'moxwebgpu pushes compute to your browser: open the page and it uses your own GPU for parallel math. The server only ships a page; data never leaves your machine.',
+    u_step1_t: 'Step 1 · Switch GPU / CPU', u_step1_a: 'The switch at the top: GPU ⇄ CPU in one tap. Same compute — in GPU mode the fps (top-right) is clearly higher and the picture smoother.', u_step1_b: 'The ms/frame next to it is per-frame cost; lower is faster.',
+    u_step2_t: 'Step 2 · Pick a scene', u_step2_attract: 'Tens to hundreds of thousands of particles iterate each frame, traced into a density map. Max out Particles/Steps for the wildest gap.', u_step2_mandel: 'Each pixel independently does escape iterations. Push Max iter to 800 — that is hundreds of millions of ops per frame.', u_step2_conv: 'Non-separable 2D convolution (blur/sharpen/edge/emboss). A 31×31 kernel is 480M MACs per frame.', u_step2_video: 'There is a video playing on the page; the GPU filters every frame in real time. You can upload your own video.',
+    u_step3_t: 'Step 3 · Sliders & files', u_step3_a: 'Drag the sliders — the picture updates live.', u_step3_b: '🖼️ Convolve and 🎞️ Video both let you use your own image / video.', u_step3_c: '"Pause / Resume" and "Reset" are always handy; the source video is the small window bottom-right.',
+    u_step4_t: 'Where it runs', u_step4_a: 'Chrome / Edge 113+', u_step4_b: 'Chrome on Android', u_step4_c: 'Some Firefox / Safari (enable WebGPU flag)', u_step4_d: 'Unsupported browsers auto-fall back to CPU mode (same features, just slower).', u_step4_e: 'Must be opened over https or localhost (secure context).',
+    u_step5_t: 'Tech notes', u_step5_a: 'Pure frontend, no backend, no upload. GPU compute is driven by the moxwebgpu framework (WebGPU GPGPU).', u_step5_b: 'Want the code? GitHub link is at the bottom of the page 🔗.',
+    banner: '⚠️ Your browser has no WebGPU, so it auto-fell back to CPU mode — same features, just slower. Switch to Chrome / Edge 113+ for GPU acceleration.',
+  },
+};
+const NOTES = {
+  attract: { zh: '每个粒子每帧迭代若干步，把轨迹点累加成密度图。计算量 = 粒子数 × 步数；读回量恒定，所以参数拉满时差距最夸张。', en: 'Each particle iterates several steps per frame, accumulating its trace into a density map. Cost = particles × steps; readback is constant, so maxing the sliders exaggerates the gap.' },
+  mandel: { zh: '每个像素独立做逃逸迭代，纯并行、无依赖。迭代上限拉高时一帧就是数亿次复数运算 —— CPU 会直接卡成幻灯片。', en: 'Each pixel does escape iterations independently — embarrassingly parallel. High iteration caps mean hundreds of millions of ops per frame; the CPU becomes a slideshow.' },
+  conv: { zh: '非分离 2D 卷积：每个像素要读邻域内 核宽² 个采样。核开到 31×31 时单帧 4.8 亿次乘加 —— 这是 GPU 最舒服、CPU 最难受的活。', en: 'Non-separable 2D convolution: every pixel reads a kernel-width² neighborhood. A 31×31 kernel is 480M MACs per frame — GPU’s happy place, CPU’s nightmare.' },
+  video: { zh: '页面里正在播放一段视频，GPU 对它的每一帧实时做滤镜（模糊/锐化/边缘/浮雕）。把「滤镜半径」拉大，再切到 CPU 看帧率掉下来。', en: 'A video is playing on the page; the GPU filters every one of its frames in real time (blur/sharpen/edge/emboss). Crank the radius, then flip to CPU and watch fps drop.' },
+};
+
+let L = 'zh';
+function applyLang() {
+  for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = I18N[L][el.dataset.i18n] || el.textContent;
+  document.documentElement.lang = L === 'zh' ? 'zh-CN' : 'en';
+  document.documentElement.dataset.lang = L;
+  for (const b of document.querySelectorAll('.lang button')) b.classList.toggle('on', b.dataset.lang === L);
+  hintEl.textContent = I18N[L].hint;
+  document.getElementById('banner-text').textContent = I18N[L].banner;
+  if (gpu) badgeEl.textContent = mode === 'gpu' ? (L === 'zh' ? 'GPU' : 'GPU') : (L === 'zh' ? 'CPU' : 'CPU');
+  buildUI();
+}
+for (const b of document.querySelectorAll('.lang button')) b.onclick = () => { L = b.dataset.lang; applyLang(); };
+
+/* =========================================================================
+   视频源动画（程序生成，捕获成视频流）
+   ========================================================================= */
+const vsrc = document.getElementById('vsrc');
+const vctx = vsrc.getContext('2d');
+let vsrcT = 0;
+function animateVSrc() {
+  vsrcT += 0.016;
+  const w = vsrc.width, h = vsrc.height;
+  const g = vctx.createLinearGradient(0, 0, w, h);
+  g.addColorStop(0, `hsl(${(vsrcT * 30) % 360},70%,55%)`);
+  g.addColorStop(1, `hsl(${(vsrcT * 30 + 120) % 360},70%,45%)`);
+  vctx.fillStyle = g; vctx.fillRect(0, 0, w, h);
+  // 旋转的多边形群
+  vctx.save(); vctx.translate(w / 2, h / 2); vctx.rotate(vsrcT * 0.6);
+  for (let k = 0; k < 6; k++) {
+    vctx.rotate(Math.PI * 2 / 6); vctx.beginPath();
+    const R = 80 + 30 * Math.sin(vsrcT + k);
+    vctx.rect(-R / 2, -R / 2, R, R); vctx.lineWidth = 3; vctx.strokeStyle = 'rgba(255,255,255,.7)'; vctx.stroke();
+  }
+  vctx.restore();
+  // 流动的亮点 + 文字
+  for (let i = 0; i < 40; i++) {
+    const x = (w * ((i * 0.137 + vsrcT * 0.3) % 1)), y = (h * ((i * 0.071 + vsrcT * 0.5) % 1));
+    vctx.fillStyle = 'rgba(255,255,255,.9)'; vctx.beginPath(); vctx.arc(x, y, 2.5, 0, 7); vctx.fill();
+  }
+  vctx.fillStyle = 'rgba(255,255,255,.95)'; vctx.font = 'bold 44px sans-serif'; vctx.textAlign = 'center';
+  vctx.fillText('MoX ⚡ GPU', w / 2, h / 2 + 150);
+  requestAnimationFrame(animateVSrc);
+}
+requestAnimationFrame(animateVSrc);
+(async () => {
+  const vid = document.getElementById('vid');
+  try {
+    if (vsrc.captureStream) { vid.srcObject = vsrc.captureStream(30); await vid.play().catch(() => {}); }
+    else { vid.src = ''; }
+  } catch (e) { /* 回退：小窗直接显示程序动画不强求视频元素 */ }
+})();
+
+/* =========================================================================
+   主循环
+   ========================================================================= */
+let busy = false;
+async function loop() {
+  if (!running || busy) return;
+  busy = true;
+  const d = DEMOS[demo], P = params[demo];
+  const t0 = performance.now();
+  try {
+    if (mode === 'gpu' && gpu) await d.stepGpu(P);
+    else d.stepCpu(P);
+    d.render();
+  } catch (err) {
+    console.error(err);
+    status((L === 'zh' ? '计算出错：' : 'Compute error: ') + err.message, true);
+    running = false; busy = false; return;
+  }
+  lastFrameMs = performance.now() - t0;
+  busy = false;
+  tickFps(performance.now());
+  if (running) rafId = requestAnimationFrame(loop);
+}
+
+/* =========================================================================
+   启动
+   ========================================================================= */
+(async () => {
+  buildUI();
+  applyLang();
+
+  if (!navigator.gpu) {
+    setMode('cpu');
+    switchEl.disabled = true;
+    showBanner(true);
+    status(L === 'zh' ? '未检测到 WebGPU —— 已降到 CPU 模式' : 'No WebGPU detected — fell back to CPU mode', true);
+  } else {
+    try {
+      gpu = await MoxWebGPU.mox.init();
+      const info = gpu.info();
+      status(`${L === 'zh' ? 'WebGPU 就绪' : 'WebGPU ready'} —— <b>${info.description || info.vendor || info.architecture || 'GPU'}</b> ${L === 'zh' ? '正在为你计算' : 'is computing for you'}`);
+    } catch (err) {
+      setMode('cpu'); switchEl.disabled = true;
+      showBanner(true);
+      status((L === 'zh' ? 'WebGPU 初始化失败，已降到 CPU 模式：' : 'WebGPU init failed, fell back to CPU: ') + err.message, true);
+    }
+  }
+  setMode(mode);
+  loop();
+
+  window.moxwebgpuDemo = {
+    get mode() { return mode; }, get demo() { return demo; }, get gpu() { return gpu; }, get params() { return params; },
+    demos: DEMOS, setMode,
+    switchTo(name) { for (const x of document.querySelectorAll('.tab')) x.classList.toggle('active', x.dataset.demo === name); demo = name; DEMOS[demo].reset(); buildUI(); },
+    setParam(key, value) { params[demo][key] = value; buildUI(); },
+    async step() { const d = DEMOS[demo], P = params[demo]; const t0 = performance.now(); if (mode === 'gpu' && gpu) await d.stepGpu(P); else d.stepCpu(P); d.render(); return performance.now() - t0; },
+    litPixels() { const px = ctx2d.getImageData(0, 0, W, H).data; let n = 0; for (let i = 0; i < px.length; i += 4) if (px[i] > 24 || px[i+1] > 24 || px[i+2] > 34) n++; return n; },
+  };
+})();
+
+/* 指针微光 */
+const glow = document.getElementById('glow');
+addEventListener('pointermove', e => { glow.style.left = e.clientX + 'px'; glow.style.top = e.clientY + 'px'; });
+</script>
+</body>
+</html>
