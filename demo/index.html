@@ -34,20 +34,22 @@
       radial-gradient(40% 35% at 18% 22%, rgba(55, 213, 211, 0.18), transparent 70%),
       radial-gradient(46% 42% at 80% 72%, rgba(138, 123, 255, 0.16), transparent 70%),
       radial-gradient(30% 30% at 60% 10%, rgba(255, 180, 87, 0.08), transparent 70%);
-    filter: blur(60px);
+    filter: blur(40px);
     animation: drift 26s ease-in-out infinite alternate;
     pointer-events: none;
+    will-change: transform;
   }
   @keyframes drift {
     from { transform: translate3d(-2%, -1%, 0) scale(1); }
     to   { transform: translate3d(3%, 2%, 0) scale(1.08); }
   }
-  /* 指针跟随微光 */
+  /* 指针跟随微光（transform 合成驱动，left/top 重排已移除） */
   .cursor-glow {
-    position: fixed; width: 420px; height: 420px; border-radius: 50%;
+    position: fixed; left: 0; top: 0; width: 420px; height: 420px; border-radius: 50%;
     background: radial-gradient(circle, rgba(138,123,255,.10), transparent 60%);
     transform: translate(-50%, -50%); pointer-events: none; z-index: 1;
     transition: opacity .3s; mix-blend-mode: screen;
+    will-change: transform;
   }
   .wrap { position: relative; z-index: 2; max-width: 1080px; margin: 0 auto; padding: 30px 22px 70px; }
 
@@ -805,6 +807,7 @@ for (const b of document.querySelectorAll('.lang button')) b.onclick = () => { L
 const vsrc = document.getElementById('vsrc');
 const vctx = vsrc.getContext('2d');
 let vsrcT = 0;
+let vsrcVisible = true, vsrcRaf = 0;   // 视口外自动停机：别让隐藏的动画烧 GPU
 function animateVSrc() {
   vsrcT += 0.016;
   const w = vsrc.width, h = vsrc.height;
@@ -827,9 +830,18 @@ function animateVSrc() {
   }
   vctx.fillStyle = 'rgba(255,255,255,.95)'; vctx.font = 'bold 44px sans-serif'; vctx.textAlign = 'center';
   vctx.fillText('MoX ⚡ GPU', w / 2, h / 2 + 150);
-  requestAnimationFrame(animateVSrc);
+  vsrcRaf = (vsrcVisible && !document.hidden) ? requestAnimationFrame(animateVSrc) : 0;
 }
-requestAnimationFrame(animateVSrc);
+function startVSrc(){ if(!vsrcRaf && vsrcVisible && !document.hidden) vsrcRaf = requestAnimationFrame(animateVSrc); }
+startVSrc();
+new IntersectionObserver(function(en){ vsrcVisible = en[0].isIntersecting;
+  if(vsrcVisible) startVSrc();
+  else if(vsrcRaf){ cancelAnimationFrame(vsrcRaf); vsrcRaf = 0; }
+}).observe(vsrc);
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden){ if(vsrcRaf){ cancelAnimationFrame(vsrcRaf); vsrcRaf = 0; } }
+  else startVSrc();
+});
 (async () => {
   const vid = document.getElementById('vid');
   try {
@@ -859,8 +871,19 @@ async function loop() {
   lastFrameMs = performance.now() - t0;
   busy = false;
   tickFps(performance.now());
-  if (running) rafId = requestAnimationFrame(loop);
+  if (running && cvVisible && !document.hidden) rafId = requestAnimationFrame(loop);
 }
+
+/* 视口可见性停机：demo 画布滚出屏幕就暂停 GPU 计算，滚回来自动续 */
+let cvVisible = true;
+new IntersectionObserver(en => {
+  cvVisible = en[0].isIntersecting;
+  if (!cvVisible) { if (rafId) { cancelAnimationFrame(rafId); rafId = 0; } }
+  else if (running && !rafId && !busy && !document.hidden) rafId = requestAnimationFrame(loop);
+}, { threshold: 0.05 }).observe(document.getElementById('cv'));
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && running && cvVisible && !rafId && !busy) rafId = requestAnimationFrame(loop);
+});
 
 /* =========================================================================
    启动
@@ -900,7 +923,15 @@ async function loop() {
 
 /* 指针微光 */
 const glow = document.getElementById('glow');
-addEventListener('pointermove', e => { glow.style.left = e.clientX + 'px'; glow.style.top = e.clientY + 'px'; });
+// transform 合成 + rAF 节流：指针移动零重排零重绘
+let glowRaf = 0, gx = 0, gy = 0;
+addEventListener('pointermove', e => {
+  gx = e.clientX; gy = e.clientY;
+  if (!glowRaf) glowRaf = requestAnimationFrame(() => {
+    glowRaf = 0;
+    glow.style.transform = `translate(${gx}px, ${gy}px) translate(-50%, -50%) translateZ(0)`;
+  });
+}, { passive: true });
 </script>
 </body>
 </html>
