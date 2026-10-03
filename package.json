@@ -33,8 +33,7 @@
     "tensor",
     "wgsl",
     "typescript",
-    "webgl-alternative",
-    "moxsh"
+    "webgl-alternative"
   ],
   "author": "codecloud-dev",
   "license": "MIT",
