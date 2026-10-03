@@ -7,7 +7,7 @@
 
 ## [Unreleased]
 
-计划中(见 README 路线图):f16/bf16、tensor-core matmul、多 GPU pass 融合、moxsh 生态集成。
+计划中(见 README 路线图):f16/bf16、tensor-core matmul、多 GPU pass 融合、生态集成。
 
 ## [0.2.0] - 2026-10-02
 

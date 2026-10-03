@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>moxwebgpu · 文档 / Docs</title>
+<meta name="description" content="moxwebgpu — WebGPU GPGPU framework. 类型化张量 / 惰性计算图 / 原始 Kernel。">
+<style>
+  :root{
+    --bg:#07080c; --panel:rgba(255,255,255,.045); --panel-2:rgba(255,255,255,.07);
+    --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.18);
+    --fg:#e9edf5; --fg-dim:#9aa4b8; --fg-mute:#6b7488;
+    --c1:#37d5d3; --c2:#8a7bff; --c3:#ff7ac3;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    --r:16px; --shadow:0 10px 40px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg); color:var(--fg); font-family:var(--sans);
+    line-height:1.7; -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(900px 500px at 12% -8%, rgba(55,213,211,.13), transparent 60%),
+      radial-gradient(800px 480px at 88% 4%, rgba(138,123,255,.14), transparent 62%),
+      radial-gradient(700px 420px at 50% 100%, rgba(255,122,195,.07), transparent 60%);
+    background-attachment:fixed;
+  }
+  /* ---- 语言切换按钮 ---- */
+  .lang-switch{
+    position:fixed; top:16px; right:16px; z-index:100;
+    display:flex; padding:4px; gap:2px;
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:999px; backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    box-shadow:var(--shadow);
+  }
+  .lang-switch button{
+    font:600 13px/1 var(--sans); color:var(--fg-dim); cursor:pointer;
+    padding:8px 16px; border:0; border-radius:999px; background:transparent;
+    transition:.22s;
+  }
+  .lang-switch button:hover{color:var(--fg)}
+  .lang-switch button.active{
+    color:#06121a; background:linear-gradient(135deg,var(--c1),var(--c2));
+    box-shadow:0 2px 12px rgba(55,213,211,.35);
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:88px 24px 120px}
+  header{text-align:center;margin-bottom:56px}
+  .logo{
+    width:96px;height:96px;margin:0 auto 20px;border-radius:24px;display:block;
+    filter:drop-shadow(0 8px 30px rgba(55,213,211,.35));
+  }
+  h1{font-size:clamp(34px,6vw,52px);font-weight:800;letter-spacing:-.02em;
+     background:linear-gradient(120deg,var(--c1),var(--c2) 55%,var(--c3));
+     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .tag{color:var(--fg-dim);font-size:17px;margin-top:12px}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:24px}
+  .badge{font:600 12px/1 var(--sans);color:var(--fg-dim);padding:7px 13px;
+    background:var(--panel);border:1px solid var(--line);border-radius:999px}
+  .badge b{color:var(--c1)}
+  nav.toc{
+    display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:36px 0 8px;
+  }
+  nav.toc a{font-size:13.5px;color:var(--fg-dim);text-decoration:none;padding:8px 15px;
+    background:var(--panel);border:1px solid var(--line);border-radius:999px;transition:.2s}
+  nav.toc a:hover{color:var(--fg);border-color:var(--line-2);background:var(--panel-2)}
+  section{
+    margin-top:52px;padding:30px;border-radius:var(--r);
+    background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(10px);
+  }
+  h2{font-size:24px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:11px}
+  h2::before{content:"";width:4px;height:22px;border-radius:2px;background:linear-gradient(var(--c1),var(--c2))}
+  h3{font-size:17px;font-weight:650;margin:24px 0 10px;color:var(--fg)}
+  p{color:var(--fg-dim);margin-bottom:14px}
+  p strong,li strong{color:var(--fg);font-weight:600}
+  ul,ol{color:var(--fg-dim);margin:0 0 14px 22px}
+  li{margin-bottom:7px}
+  pre{
+    background:rgba(0,0,0,.42);border:1px solid var(--line);border-radius:12px;
+    padding:18px;overflow-x:auto;margin-bottom:16px;
+  }
+  code{font-family:var(--mono);font-size:13.5px;color:#cfe3ff}
+  pre code{color:#d6e6ff}
+  :not(pre)>code{background:var(--panel-2);padding:2px 7px;border-radius:6px;
+    border:1px solid var(--line);font-size:.9em}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+  .card{padding:20px;border-radius:13px;background:rgba(255,255,255,.03);border:1px solid var(--line);transition:.22s}
+  .card:hover{border-color:var(--line-2);transform:translateY(-2px)}
+  .card h4{font-size:15.5px;font-weight:650;color:var(--c1);margin-bottom:7px}
+  .card p{font-size:14px;margin:0}
+  table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:14.5px}
+  th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line)}
+  th{color:var(--fg);font-weight:650;font-size:13.5px;text-transform:uppercase;letter-spacing:.04em}
+  td{color:var(--fg-dim)}
+  td code{white-space:nowrap}
+  .install{display:flex;gap:10px;align-items:center;background:rgba(0,0,0,.42);
+    border:1px solid var(--line);border-radius:12px;padding:8px 8px 8px 18px;margin-bottom:16px}
+  .install code{flex:1;font-size:14.5px;color:var(--c1)}
+  .install button{
+    font:600 12.5px/1 var(--sans);color:var(--fg);cursor:pointer;white-space:nowrap;
+    padding:9px 15px;border-radius:8px;border:1px solid var(--line-2);
+    background:var(--panel-2);transition:.2s
+  }
+  .install button:hover{background:rgba(255,255,255,.12)}
+  .install button.done{color:var(--c1);border-color:var(--c1)}
+  .links{display:flex;flex-wrap:wrap;gap:11px;margin-top:22px}
+  .links a{
+    font:600 14px/1 var(--sans);color:var(--fg);text-decoration:none;padding:12px 20px;
+    border-radius:11px;border:1px solid var(--line);background:var(--panel-2);transition:.22s
+  }
+  .links a:hover{border-color:var(--c1);color:var(--c1);transform:translateY(-2px)}
+  footer{text-align:center;color:var(--fg-mute);font-size:13px;margin-top:64px;padding-top:28px;border-top:1px solid var(--line)}
+  footer a{color:var(--fg-dim)}
+  /* ---- 语言可见性 ---- */
+  html[data-lang="zh"] [data-l="en"]{display:none !important}
+  html[data-lang="en"] [data-l="zh"]{display:none !important}
+  @media(max-width:560px){
+    .wrap{padding:76px 16px 90px}
+    section{padding:22px 18px}
+    .lang-switch{top:12px;right:12px}
+    .lang-switch button{padding:7px 13px;font-size:12px}
+  }
+</style>
+</head>
+<body>
+
+<div class="lang-switch" role="group" aria-label="Language / 语言">
+  <button id="btn-zh" data-set="zh">中文</button>
+  <button id="btn-en" data-set="en">English</button>
+</div>
+
+<div class="wrap">
+<header>
+  <img class="logo" src="../assets/logo.svg" alt="moxwebgpu logo">
+  <h1>moxwebgpu</h1>
+  <p class="tag" data-l="zh">把 WebGPU 通用计算变成一行代码</p>
+  <p class="tag" data-l="en">WebGPU GPGPU in one line of code</p>
+  <div class="badges">
+    <span class="badge"><b>30+</b> <span data-l="zh">算子</span><span data-l="en">ops</span></span>
+    <span class="badge"><b>40</b> <span data-l="zh">项测试全绿</span><span data-l="en">tests passing</span></span>
+    <span class="badge"><b>0</b> <span data-l="zh">运行时依赖</span><span data-l="en">runtime deps</span></span>
+    <span class="badge">WebGPU · GPGPU</span>
+    <span class="badge">TypeScript</span>
+  </div>
+  <nav class="toc">
+    <a href="#overview"    data-l="zh">概览</a><a href="#overview"    data-l="en">Overview</a>
+    <a href="#install"     data-l="zh">安装</a><a href="#install"     data-l="en">Install</a>
+    <a href="#quickstart"  data-l="zh">快速上手</a><a href="#quickstart"  data-l="en">Quick start</a>
+    <a href="#layers"      data-l="zh">三层架构</a><a href="#layers"     data-l="en">Architecture</a>
+    <a href="#usage"       data-l="zh">用法</a><a href="#usage"       data-l="en">Usage</a>
+    <a href="#links"       data-l="zh">链接</a><a href="#links"       data-l="en">Links</a>
+  </nav>
+</header>
+
+<!-- ============ 概览 ============ -->
+<section id="overview">
+  <h2><span data-l="zh">项目概览</span><span data-l="en">Overview</span></h2>
+  <p data-l="zh"><strong>moxwebgpu</strong> 是一个面向浏览器的 <strong>WebGPU 通用计算（GPGPU）框架</strong>。它把 WebGPU 底层繁琐的适配器管理、管线构建、缓冲区生命周期、数据读回全部封装起来，对外暴露三层递进式 API。</p>
+  <p data-l="en"><strong>moxwebgpu</strong> is a <strong>WebGPU general-purpose compute (GPGPU) framework</strong> for the browser. It wraps all the boilerplate — adapter management, pipeline building, buffer lifetime, readback — behind three layers of API.</p>
+
+  <blockquote style="border-left:3px solid var(--c1);padding:12px 18px;background:rgba(55,213,211,.06);border-radius:0 10px 10px 0;margin-bottom:18px">
+    <p style="margin:0;color:var(--fg)">
+      <span data-l="zh">同一份代码，浏览器与 Node 通用。没有独立显卡的机器上，用 Chrome 自带的 SwiftShader 软件渲染也能把真实 WebGPU 端到端测试全部跑绿——它的每一行 GPU 代码都被真实验证过。</span>
+      <span data-l="en">One codebase for browser and Node. Even without a discrete GPU, Chrome's built-in SwiftShader software renderer runs the real end-to-end WebGPU tests green — every line of GPU code here is actually verified.</span>
+    </p>
+  </blockquote>
+
+  <div class="grid">
+    <div class="card">
+      <h4 data-l="zh">Tensor 层 · 快速计算</h4><h4 data-l="en">Tensor layer · compute fast</h4>
+      <p data-l="zh">类型化张量 + 链式算子，<code>gpu.tensor([1,2]).sum()</code></p>
+      <p data-l="en">Typed tensors with a chainable op API, <code>gpu.tensor([1,2]).sum()</code></p>
+    </div>
+    <div class="card">
+      <h4 data-l="zh">Lazy 图 · 省心优化</h4><h4 data-l="en">Lazy graph · optimize</h4>
+      <p data-l="zh">整条算子链一次下发，中间缓冲自动回收，只 dispatch 一次</p>
+      <p data-l="en">The whole chain dispatches once, with automatic temp-buffer recycling</p>
+    </div>
+    <div class="card">
+      <h4 data-l="zh">Kernel 层 · 完全控制</h4><h4 data-l="en">Kernel layer · full control</h4>
+      <p data-l="zh">直接跑原始 WGSL，管线缓存加速</p>
+      <p data-l="en">Run raw WGSL with pipeline caching</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 安装 ============ -->
+<section id="install">
+  <h2><span data-l="zh">安装</span><span data-l="en">Install</span></h2>
+
+  <h3 data-l="zh">方式一：浏览器 script（零构建）</h3>
+  <h3 data-l="en">Option 1: browser script (no build)</h3>
+  <pre><code>&lt;script src="https://unpkg.com/moxwebgpu/dist/moxwebgpu.browser.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const gpu = await MoxWebGPU.mox.init();
+  console.log(await gpu.tensor([1, 2, 3]).sum().item()); // 6
+&lt;/script&gt;</code></pre>
+  <p data-l="zh">IIFE 产物暴露全局 <code>MoxWebGPU</code>，内含 <code>mox</code>、<code>MoxContext</code>、<code>Tensor</code>、<code>Kernel</code> 等全部导出。</p>
+  <p data-l="en">The IIFE bundle exposes a global <code>MoxWebGPU</code> with <code>mox</code>, <code>MoxContext</code>, <code>Tensor</code>, <code>Kernel</code> and all other exports.</p>
+
+  <h3 data-l="zh">方式二：npm（Node / 打包器）</h3>
+  <h3 data-l="en">Option 2: npm (Node / bundlers)</h3>
+  <div class="install">
+    <code id="inst-cmd">npm install moxwebgpu</code>
+    <button data-copy="#inst-cmd" id="copy-btn">复制 Copy</button>
+  </div>
+  <pre><code>import { mox } from 'moxwebgpu';          // ESM
+// const { mox } = require('moxwebgpu');  // CJS</code></pre>
+</section>
+
+<!-- ============ 快速上手 ============ -->
+<section id="quickstart">
+  <h2><span data-l="zh">快速上手</span><span data-l="en">Quick start</span></h2>
+  <p data-l="zh">以下示例默认已执行 <code>const gpu = await mox.init();</code></p>
+  <p data-l="en">The examples below assume <code>const gpu = await mox.init();</code> has run.</p>
+
+  <h3 data-l="zh">1. 创建张量</h3><h3 data-l="en">1. Create tensors</h3>
+  <pre><code>const a = gpu.tensor([1, 2, 3, 4]);                    // 1-D, shape inferred [4]
+const m = gpu.tensor([[1, 2, 3], [4, 5, 6]]);              // 2-D, shape [2,3]
+const t = gpu.tensor(flatData, { shape: [128, 128] });     // TypedArray + explicit shape</code></pre>
+
+  <h3 data-l="zh">2. 链式调用与惰性求值</h3><h3 data-l="en">2. Chaining &amp; lazy evaluation</h3>
+  <pre><code>// 写法像 NumPy，执行像 CUDA 图
+const r = await gpu.tensor([1, 2, 3, 4])
+  .add(1)      // [2,3,4,5]
+  .relu()
+  .mul(10)     // [20,30,40,50]
+  .sum()       // 归约
+  .item();     // 140 —— 读回时整条链才执行，且只执行一次</code></pre>
+
+  <h3 data-l="zh">3. 矩阵乘法</h3><h3 data-l="en">3. Matmul</h3>
+  <pre><code>const c = await gpu.tensor([[1, 2], [3, 4]])
+  .matmul(gpu.tensor([[5, 6], [7, 8]]))
+  .toArray();  // [[19, 22], [43, 50]]</code></pre>
+</section>
+
+<!-- ============ 三层架构 ============ -->
+<section id="layers">
+  <h2><span data-l="zh">三层架构</span><span data-l="en">Architecture</span></h2>
+  <table>
+    <thead>
+      <tr>
+        <th data-l="zh">层</th><th data-l="en">Layer</th>
+        <th data-l="zh">能力</th><th data-l="en">Capability</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Tensor</strong></td>
+        <td data-l="zh">类型化张量 + 30+ 链式算子</td><td data-l="en">Typed tensors + 30+ chainable ops</td>
+      </tr>
+      <tr>
+        <td><strong>Lazy graph</strong></td>
+        <td data-l="zh">拓扑排序、整链一次下发、临时缓冲回收</td><td data-l="en">Topo-sort, single dispatch, temp recycling</td>
+      </tr>
+      <tr>
+        <td><strong>Kernel</strong></td>
+        <td data-l="zh">原始 WGSL + 管线缓存</td><td data-l="en">Raw WGSL + pipeline cache</td>
+      </tr>
+      <tr>
+        <td><strong>core</strong></td>
+        <td data-l="zh">上下文 / 缓冲池 / dtype</td><td data-l="en">Context / buffer pool / dtypes</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 用法 ============ -->
+<section id="usage">
+  <h2><span data-l="zh">从源码构建与测试</span><span data-l="en">Build &amp; test from source</span></h2>
+  <pre><code>git clone https://github.com/codecloud-dev/moxwebgpu.git
+cd moxwebgpu
+pnpm install      # 安装依赖
+pnpm build        # 产物输出到 dist/
+pnpm test         # 单元测试
+pnpm test:gpu     # 真实 WebGPU 端到端测试
+pnpm demo         # 启动本地演示页</code></pre>
+  <p data-l="zh">产物同时输出 <code>ESM</code> / <code>CJS</code> / <code>IIFE 浏览器版</code> 与类型声明，运行时零依赖。</p>
+  <p data-l="en">Outputs <code>ESM</code> / <code>CJS</code> / <code>IIFE browser</code> bundles plus type declarations, with zero runtime dependencies.</p>
+</section>
+
+<!-- ============ 链接 ============ -->
+<section id="links">
+  <h2><span data-l="zh">开发者资源</span><span data-l="en">Developer resources</span></h2>
+  <div class="links">
+    <a href="https://github.com/codecloud-dev/moxwebgpu" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://github.com/codecloud-dev/moxwebgpu/issues" target="_blank" rel="noopener">Issues</a>
+    <a href="https://github.com/codecloud-dev/moxwebgpu/discussions" target="_blank" rel="noopener">Discussions</a>
+    <a href="https://www.npmjs.com/package/moxwebgpu" target="_blank" rel="noopener">npm</a>
+    <a href="https://unpkg.com/moxwebgpu/dist/moxwebgpu.browser.js" target="_blank" rel="noopener">unpkg</a>
+    <a href="../index.html" data-l="zh">在线演示 Demo</a>
+    <a href="../index.html" data-l="en">Live demo</a>
+  </div>
+</section>
+
+<footer>
+  <p data-l="zh">moxwebgpu · MIT 许可证 · <a href="https://github.com/codecloud-dev/moxwebgpu">GitHub</a></p>
+  <p data-l="en">moxwebgpu · MIT License · <a href="https://github.com/codecloud-dev/moxwebgpu">GitHub</a></p>
+</footer>
+</div>
+
+<script>
+(function(){
+  var KEY='moxwebgpu-lang';
+  function setLang(l){
+    document.documentElement.setAttribute('data-lang', l);
+    document.documentElement.lang = (l==='zh' ? 'zh-CN' : 'en');
+    try{ localStorage.setItem(KEY, l); }catch(e){}
+    document.getElementById('btn-zh').classList.toggle('active', l==='zh');
+    document.getElementById('btn-en').classList.toggle('active', l==='en');
+  }
+  // 初始语言：URL ?lang= > 本地记忆 > 浏览器语言
+  var url = new URLSearchParams(location.search).get('lang');
+  var saved = null; try{ saved = localStorage.getItem(KEY); }catch(e){}
+  var nav = (navigator.language||'zh').toLowerCase();
+  setLang(url || saved || (nav.indexOf('zh')===0 ? 'zh' : 'en'));
+
+  document.getElementById('btn-zh').onclick=function(){ setLang('zh'); };
+  document.getElementById('btn-en').onclick=function(){ setLang('en'); };
+
+  // 复制安装命令
+  var btn=document.getElementById('copy-btn');
+  if(btn){ btn.onclick=function(){
+    var txt=document.getElementById('inst-cmd').textContent.trim();
+    navigator.clipboard&&navigator.clipboard.writeText(txt);
+    var zh=document.documentElement.getAttribute('data-lang')==='zh';
+    btn.textContent = zh ? '已复制 ✓' : 'Copied ✓';
+    setTimeout(function(){ btn.textContent = zh ? '复制 Copy' : 'Copy'; }, 1600);
+  };}
+})();
+</script>
+</body>
+</html>

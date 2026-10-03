@@ -1,7 +1,9 @@
-name: Deploy demo to GitHub Pages
+name: Deploy site to GitHub Pages
 
-# 把 demo 页（含构建好的浏览器 bundle）部署到 GitHub Pages，
-# 产出独立地址 https://codecloud-dev.github.io/moxwebgpu/
+# 部署站点到 GitHub Pages：
+#   /       → 液态玻璃演示页（构建后的浏览器 bundle）
+#   /docs/  → 双语文档站（中/英切换按钮）
+# 产出 https://codecloud-dev.github.io/moxwebgpu/
 # 仅用仓库自带的 GITHUB_TOKEN，无需额外密钥。
 
 on:
@@ -16,7 +18,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -36,11 +38,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
-      - name: Assemble demo site
+      - name: Assemble site (demo + docs)
         run: |
-          mkdir -p _site
+          mkdir -p _site/docs
+          # 演示页（根）
           cp demo/index.html _site/index.html
           cp dist/moxwebgpu.browser.js _site/moxwebgpu.browser.js
+          # 双语文档站
+          cp docs/index.html _site/docs/index.html
+          cp -r assets _site/assets
 
       - uses: actions/upload-pages-artifact@v3
         with:

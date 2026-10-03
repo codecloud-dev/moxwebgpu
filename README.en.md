@@ -7,7 +7,7 @@
 <p align="center"><b>WebGPU GPGPU in one line of code.</b><br>
 Typed tensors, a lazy compute graph and raw kernels — one zero-dependency TypeScript package, 30+ GPU ops, tested end-to-end on real WebGPU even on machines without a GPU.</p>
 
-<p align="center"><b>English</b> · <a href="README.md">中文(完整版)</a></p>
+<p align="center"><b>English</b> · <a href="README.md">中文</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/docs/">📖 Docs (中/EN switch)</a></p>
 
 <p align="center">
   <a href="../../actions"><img src="https://img.shields.io/github/actions/workflow/status/codecloud-dev/moxwebgpu/ci.yml?branch=main&label=CI&color=8a7bff" alt="CI"></a>
@@ -25,7 +25,7 @@ Typed tensors, a lazy compute graph and raw kernels — one zero-dependency Type
 
 Raw WebGPU compute is powerful but brutal: adapter/device boilerplate, WGSL pipelines, bind groups, manual buffer lifecycles, staging readbacks — and **validation errors are silent** (a broken shader just turns your dispatch into a no-op and your output into zeros).
 
-**moxwebgpu** = **MoX** + **WebGPU**: a WebGPU general-purpose compute (GPGPU) framework (not moxsh, not anything else — the name is simply the MoX series plus WebGPU). It wraps all of the boilerplate behind three layers:
+**moxwebgpu** = **MoX** + **WebGPU**: a WebGPU general-purpose compute (GPGPU) framework. It wraps all of the boilerplate behind three layers:
 
 ```text
 Tensor   gpu.tensor([1,2,3]).add(1).relu().sum().item()   ← the only layer you touch
@@ -40,15 +40,13 @@ Core     BufferPool (power-of-two buckets) · PipelineCache (WGSL hash) · raw K
 - **44 passing tests** — 27 GPU e2e (value-compared against CPU references) + 17 unit tests, green even on GPU-less machines via SwiftShader + xvfb
 - **Zero runtime dependencies**, ESM + CJS + IIFE + d.ts, ~30 KB browser bundle
 
-## MoX series
+## About this project
 
-| Product | Status | One-liner |
+moxwebgpu is a standalone open-source library: rebuilding, properly, the WebGPU general-purpose compute capability that "should be simple" in the browser.
+
+| Project | Status | One-liner |
 | :-----: | :----: | --------- |
-| **moxsh** | live | liquid-glass Android terminal, Termux-compatible |
-| **mox-site** | live | series portal ([website](https://codecloud-dev.github.io/mox-site/)) |
 | **moxwebgpu** | live (this repo) | WebGPU GPGPU framework |
-| **moxbox** | planned | TBD |
-| **moxcode** | planned | TBD |
 
 ---
 
@@ -341,7 +339,7 @@ Want to add an op? `OpDef` = pure metadata (shape inference + codegen) → two t
 - [x] arbitrary-axis reductions (any rank, negative axes)
 - [ ] tensor-core-friendly matmul (double buffering)
 - [ ] multi-pass fusion in the scheduler
-- [ ] moxsh ecosystem integration
+- [ ] Ecosystem integrations
 
 ## Contributing
 
@@ -349,7 +347,7 @@ Issues and PRs welcome. Keep PRs focused; add tests for behavior changes. GPU-af
 
 ## Supporting
 
-Development is sustained by the community. Sponsorship channels for the MoX series are **being set up and will open soon** — if moxwebgpu saves you time, a star or a share helps a lot right now. <a href="FUNDING.yml">FUNDING.yml</a> will list the channels once live.
+Development is sustained by the community. Sponsorship channels are **being set up and will open soon** — if moxwebgpu saves you time, a star or a share helps a lot right now. <a href="FUNDING.yml">FUNDING.yml</a> will list the channels once live.
 
 ## License
 

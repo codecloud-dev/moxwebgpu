@@ -25,6 +25,10 @@
   <img src="https://img.shields.io/badge/Ops-30%2B-ff7ac3" alt="算子数量">  
 </p>
 
+<p align="center">
+  <b>中文</b> · <a href="README.en.md">English</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/docs/">📖 文档站(中/EN 一键切换)</a>
+</p>
+
 > **同一份代码,浏览器与 Node 通用。** 没有独立显卡的机器上,用 Chrome 自带的 SwiftShader 软件渲染也能把 27 个真实 WebGPU 端到端测试全部跑绿——这是 moxwebgpu 与大多数「纸面 WebGPU 项目」最大的不同:**它的每一行 GPU 代码都被真实验证过**。
 
 <details>
@@ -32,7 +36,7 @@
 <summary><b>目录</b>(点击展开)</summary>
 
 - [项目概览](#项目概览)
-- [MoX 系列](#mox-系列)
+- [关于本项目](#关于本项目)
 - [为什么需要 moxwebgpu](#为什么需要-moxwebgpu)
 - [三层架构](#三层架构)
 - [安装](#安装)
@@ -58,14 +62,13 @@
 
 ## 项目概览
 
-**moxwebgpu** = **MoX** + **WebGPU**:一个面向浏览器的 **WebGPU 通用计算(GPGPU)框架**(不是 moxsh,也不是别的;名字就来自 MoX 系列 + WebGPU)。它把 WebGPU 底层繁琐的适配器管理、管线构建、缓冲区生命周期、数据读回全部封装起来,对外暴露三层递进式 API:
+**moxwebgpu** = **MoX** + **WebGPU**:一个面向浏览器的 **WebGPU 通用计算(GPGPU)框架**。它把 WebGPU 底层繁琐的适配器管理、管线构建、缓冲区生命周期、数据读回全部封装起来,对外暴露三层递进式 API:
 
 | 你想要   | moxwebgpu 给你的                   | 一句话示例                                                  |
 | ----- | ------------------------------- | ------------------------------------------------------ |
 | 快速做计算 | **Tensor 层** —— 类型化张量 + 链式算子    | `gpu.tensor([1,2,3]).add(1).sum().item()`              |
 | 省心做优化 | **Lazy 计算图** —— 整链一次下发、中间缓冲自动回收 | 六个算子串起来也只 dispatch 一次                                  |
 | 完全控制  | **Kernel 层** —— 直接跑原始 WGSL      | `gpu.kernel(wgsl).run([bufA, bufB], { elements: 64 })` |
-
 | 关键指标  | 数值                                               |
 | ----- | ------------------------------------------------ |
 | 运行时依赖 | **0**(纯 TypeScript)                              |
@@ -80,17 +83,13 @@
 
 ---
 
-## MoX 系列
+## 关于本项目
 
-moxwebgpu 是 **MoX 工具系列**的新成员。一套审美与工程哲学:把浏览器里「本该简单」的能力,认真重造一遍。
+moxwebgpu 是一个独立的开源库:把浏览器里「本该简单」的 WebGPU 通用计算能力,认真重造一遍。
 
-|       产品      |    状态    | 一句话定位                                                                              |
-| :-----------: | :------: | ---------------------------------------------------------------------------------- |
-|   **moxsh**   |    已上线   | Android 液态玻璃终端,兼容 Termux 生态([仓库](https://github.com/codecloud-dev/moxsh-terminal)) |
-|  **mox-site** |    已上线   | 本系列官方门户([官网](https://codecloud-dev.github.io/mox-site/))                           |
-| **moxwebgpu** | 已上线(本仓库) | **WebGPU 通用计算框架 —— 浏览器里的张量与计算图**                                                   |
-|   **moxbox**  | 规划中 · 待定 | 文件管理与系统套件;**可能做,也可能不做**                                                            |
-|  **moxcode**  | 规划中 · 待定 | 移动端轻量 IDE;**可能做,也可能不做**                                                            |
+| 项目 | 状态 | 一句话定位 |
+| :--: | :--: | --- |
+| **moxwebgpu** | 已上线(本仓库) | **WebGPU 通用计算框架 —— 浏览器里的张量与计算图** |
 
 
 
@@ -504,7 +503,7 @@ chromium \
 
 ## 浏览器演示
 
-[`examples/browser/index.html`](examples/browser/index.html) 是一个自包含的液态玻璃演示页——和 moxsh 同一套设计语言:近黑底、青→靛强调色、顶部高光反射、折射边、指针跟随光斑、缓慢漂移的环境光。
+[`examples/browser/index.html`](examples/browser/index.html) 是一个自包含的液态玻璃演示页:近黑底、青→靛强调色、顶部高光反射、折射边、指针跟随光斑、缓慢漂移的环境光。
 
 四张玻璃卡片,各自真刀真枪跑在 WebGPU 上:
 
