@@ -40,10 +40,12 @@ jobs:
 
       - name: Assemble site (demo + docs)
         run: |
-          mkdir -p _site/docs
-          # 演示页（根）
+          mkdir -p _site/docs _site/demo
+          # 演示页（根 + /demo/，两者都可用，README 链接指向 /demo/）
           cp demo/index.html _site/index.html
+          cp demo/index.html _site/demo/index.html
           cp dist/moxwebgpu.browser.js _site/moxwebgpu.browser.js
+          cp dist/moxwebgpu.browser.js _site/demo/moxwebgpu.browser.js
           # 双语文档站
           cp docs/index.html _site/docs/index.html
           cp -r assets _site/assets
