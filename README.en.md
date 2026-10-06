@@ -7,12 +7,12 @@
 <p align="center"><b>WebGPU GPGPU in one line of code.</b><br>
 Typed tensors, a lazy compute graph and raw kernels — one zero-dependency TypeScript package, 30+ GPU ops, tested end-to-end on real WebGPU even on machines without a GPU.</p>
 
-<p align="center"><b>English</b> · <a href="README.md">中文</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/docs/">📖 Docs (中/EN switch)</a></p>
+<p align="center"><b>English</b> · <a href="README.md">中文</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/docs/">📖 Docs (中/EN switch)</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/demo/">🚀 Live demo</a></p>
 
 <p align="center">
   <a href="../../actions"><img src="https://img.shields.io/github/actions/workflow/status/codecloud-dev/moxwebgpu/ci.yml?branch=main&label=CI&color=8a7bff" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/codecloud-dev/moxwebgpu?color=37d5d3" alt="License"></a>
-  <a href="#testing--quality"><img src="https://img.shields.io/badge/tests-40%20passing-37d5d3" alt="Tests"></a>
+  <a href="#testing--quality"><img src="https://img.shields.io/badge/tests-48%20passing-37d5d3" alt="Tests"></a>
   <img src="https://img.shields.io/badge/WebGPU-GPGPU-8a7bff?logo=webgpu&logoColor=white" alt="WebGPU">
   <img src="https://img.shields.io/badge/Dependencies-0-37d5d3" alt="Zero deps">
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
@@ -37,7 +37,7 @@ Core     BufferPool (power-of-two buckets) · PipelineCache (WGSL hash) · raw K
 - **Lazy by default** — a whole chain dispatches once on `.item()`; intermediates never leak
 - **30+ GPU ops** — elementwise, two-phase tree reductions, argmax/argmin, 16×16-tiled matmul, fused softmax, strided slicing/concat, zero-copy reshape
 - **Silent-failure defense** — shader compile errors surfaced with line/column via `getCompilationInfo()`
-- **44 passing tests** — 27 GPU e2e (value-compared against CPU references) + 17 unit tests, green even on GPU-less machines via SwiftShader + xvfb
+- **48 passing tests** — 27 GPU e2e (value-compared against CPU references) + 21 unit tests, green even on GPU-less machines via SwiftShader + xvfb
 - **Zero runtime dependencies**, ESM + CJS + IIFE + d.ts, ~30 KB browser bundle
 
 ## About this project
@@ -51,6 +51,8 @@ moxwebgpu is a standalone open-source library: rebuilding, properly, the WebGPU 
 ---
 
 ## Install
+
+> ⚠️ **npm / CDN not published yet**: `moxwebgpu` is not on npm yet, so the `unpkg` CDN and `npm install` below **do not work yet** (404 online). Use **From source** for now, or try the [live demo](#browser-demo) in your browser. This section will be updated on publish.
 
 **Browser `<script>` (zero build):**
 
@@ -272,7 +274,7 @@ Built-in performance design: lazy graph (one readback per chain), refcounted int
 
 | Suite | Count | Coverage |
 | ----- | ----- | -------- |
-| `tests/unit/` | 17 | byte-level uniform encoders, WGSL codegen, topo sort, OpDef shapes |
+| `tests/unit/` | 21 | byte-level uniform encoders, WGSL codegen, topo sort, OpDef shapes |
 | `tests/gpu/` | **27** | elementwise / broadcast / unary chains / lazy chains / matmul ×3 / all reductions / argmax / softmax / slice / concat / reshape views / deep pipelines / raw Kernel |
 | `tests/gpu/bench/` | bench | elementwise / matmul / reduce / chain (medians) |
 
@@ -295,7 +297,7 @@ chromium --enable-unsafe-webgpu --enable-features=Vulkan --no-sandbox
 | Command | What it does |
 | ------- | ------------ |
 | `pnpm build` | tsup → ESM / CJS / IIFE + d.ts |
-| `pnpm test` | 17 unit tests |
+| `pnpm test` | 21 unit tests |
 | `pnpm test:gpu` | 27 GPU e2e (auto SwiftShader/xvfb) |
 | `pnpm test:all` | both |
 | `pnpm bench` | micro-benchmarks |
@@ -305,6 +307,8 @@ chromium --enable-unsafe-webgpu --enable-features=Vulkan --no-sandbox
 ---
 
 ## Browser demo
+
+🌐 **Try it live (no install):**[https://codecloud-dev.github.io/moxwebgpu/demo/](https://codecloud-dev.github.io/moxwebgpu/demo/) — your GPU, computing in front of you.
 
 [`examples/browser/index.html`](examples/browser/index.html) is a self-contained liquid-glass demo — aurora ambient light, cursor-following glow, glass cards with backdrop filters. Four cards, all genuinely running on WebGPU: chained ops, 128² matmul, softmax with row-sum check, 1M-element reductions.
 
@@ -322,7 +326,7 @@ moxwebgpu/
 │   ├── graph/                   # lazy(DAG/OpDef) · pipelineCache · scheduler
 │   └── tensor/                  # tensor.ts · codegen.ts · ops/{elementwise,reduce,matmul,shape,nn}
 ├── tests/
-│   ├── unit/core.test.ts        # 17 unit tests
+│   ├── unit/core.test.ts        # 21 unit tests
 │   └── gpu/                     # harness · ref(CPU) · 3 suites + bench/
 ├── scripts/run-gpu-tests.sh     # VK_ICD + xvfb wrapper
 ├── examples/browser/index.html  # liquid-glass demo
@@ -347,7 +351,13 @@ Issues and PRs welcome. Keep PRs focused; add tests for behavior changes. GPU-af
 
 ## Supporting
 
-Development is sustained by the community. Sponsorship channels are **being set up and will open soon** — if moxwebgpu saves you time, a star or a share helps a lot right now. <a href="FUNDING.yml">FUNDING.yml</a> will list the channels once live.
+moxwebgpu is an independently developed, free and open-source project, and will keep being maintained. **If it saves you time writing WebGPU boilerplate, a ⭐ star goes a long way** — it is what helps others find the project.
+
+If it is useful in your work, you can also support development:
+
+- Afdian: https://afdian.com/a/cloudharbor
+
+Stars, shares, or telling me where you use it are the best support. See [FUNDING.yml](FUNDING.yml) for the channels.
 
 ## License
 

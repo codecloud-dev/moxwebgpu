@@ -1,4 +1,6 @@
-# GitHub Sponsors —— 点击仓库顶部的 "Sponsor" 按钮
-github: [codecloud-dev]
+# 爱发电 —— 仓库顶部 Sponsor 按钮会显示(主通道,国内可正常收款)
+custom: ["https://afdian.com/a/cloudharbor"]
 
-# 更多赞助渠道(爱发电等)即将开放,见 README「支持我们」。
+# GitHub Sponsors 暂不支持中国大陆地区(官方支持约 103 个地区,不含大陆,且需开启两步验证),
+# 保留但不作为主通道;国内用户请走上面的爱发电。
+github: [codecloud-dev]

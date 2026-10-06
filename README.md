@@ -21,15 +21,15 @@
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript\&logoColor=white" alt="TypeScript 5.x">  
   <img src="https://img.shields.io/badge/Runtime_Deps-0-37d5d3" alt="运行时零依赖">  
   <img src="https://img.shields.io/badge/Bundle-IIFE·ESM·CJS-2088FF" alt="三产物">  
-  <img src="https://img.shields.io/badge/Tests-23%20GPU_e2e\_%2B_17_unit-3DDC84" alt="测试覆盖">  
+  <img src="https://img.shields.io/badge/Tests-27%20GPU_e2e\_%2B_21_unit-3DDC84" alt="测试覆盖">  
   <img src="https://img.shields.io/badge/Ops-30%2B-ff7ac3" alt="算子数量">  
 </p>
 
 <p align="center">
-  <b>中文</b> · <a href="README.en.md">English</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/docs/">📖 文档站(中/EN 一键切换)</a>
+  <b>中文</b> · <a href="README.en.md">English</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/docs/">📖 文档站(中/EN 一键切换)</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/demo/">🚀 在线演示</a>
 </p>
 
-> **同一份代码,浏览器与 Node 通用。** 没有独立显卡的机器上,用 Chrome 自带的 SwiftShader 软件渲染也能把 27 个真实 WebGPU 端到端测试全部跑绿——这是 moxwebgpu 与大多数「纸面 WebGPU 项目」最大的不同:**它的每一行 GPU 代码都被真实验证过**。
+> **同一份源码,浏览器运行、Node 构建与测试。** 没有独立显卡的机器上,用 Chrome 自带的 SwiftShader 软件渲染也能把 27 个真实 WebGPU 端到端测试全部跑绿——这是 moxwebgpu 与大多数「纸面 WebGPU 项目」最大的不同:**它的每一行 GPU 代码都被真实验证过**。
 
 <details>
 
@@ -75,7 +75,7 @@
 | 产物    | ESM + CJS + IIFE(浏览器全局 `MoxWebGPU`)+ 完整 `.d.ts`  |
 | 数据类型  | `f32` / `i32` / `u32`                            |
 | 内置算子  | 30+(逐元素 / 归约 / 矩阵 / 形状 / NN / 类型转换)              |
-| 测试    | 17 单元测试 + **27 个真实 GPU 端到端测试** + 微基准             |
+| 测试    | 21 单元测试 + **27 个真实 GPU 端到端测试** + 微基准             |
 | 最低环境  | 支持 WebGPU 的浏览器(Chrome / Edge 113+);Node ≥ 18(构建) |
 
 > **moxwebgpu 适合谁**:需要在浏览器里做矩阵运算、图像处理、信号处理、ML 前向推理、并行数值计算,又不想手写一屏 WebGPU 样板代码的你。  
@@ -157,7 +157,9 @@ WebGPU 的 compute pipeline 能力极强,但裸用它做一次向量加法,你�
 
 ## 安装
 
-### 方式一:浏览器 `<script>`(零构建)
+> ⚠️ **npm / CDN 尚未发布**:`moxwebgpu` 目前还没有发布到 npm,下方「方式一(CDN)」「方式二(npm)」的 `unpkg` 与 `npm install` **暂不可用**(在线会 404)。请先走「方式三:从源码构建」,或直接在浏览器体验[在线演示](#浏览器演示)。发布后本节会更新。
+
+### 方式一:浏览器 `<script>`(零构建,即将发布)
 
 ```html
 <script src="https://unpkg.com/moxwebgpu/dist/moxwebgpu.browser.js"></script>
@@ -169,7 +171,7 @@ WebGPU 的 compute pipeline 能力极强,但裸用它做一次向量加法,你�
 
 IIFE 产物暴露全局 `MoxWebGPU`,内含 `mox`、`MoxContext`、`Tensor`、`Kernel` 等全部导出。
 
-### 方式二:npm(Node / 打包器)
+### 方式二:npm(Node / 打包器,即将发布)
 
 ```bash
 npm install moxwebgpu
@@ -261,9 +263,10 @@ await x.softmax().toArray();
 
 ```ts
 const v = gpu.tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+const m = gpu.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);  // 3×3
 
 await v.slice(2, 4).toArray();            // [2,3,4,5](start=2, size=4)
-await m.slice([1, 1], [2, 2]).toArray();  // 2D 块切片
+await m.slice([1, 1], [2, 2]).toArray();  // 2D 块切片 → [[5,6],[8,9]]
 
 await gpu.tensor([[1, 2], [3, 4]]).concat(gpu.tensor([[5, 6]]), 0).toArray();
 // [1,2,3,4,5,6] —— axis 0 拼接;多 chunk 一次直写输出
@@ -461,8 +464,8 @@ WebGPU validation 错误**不抛异常**:对象变 invalid、dispatch 变 no-op�
 
 | 套件                 | 数量        | 覆盖                                                                                                             |
 | ------------------ | --------- | -------------------------------------------------------------------------------------------------------------- |
-| `tests/unit/`      | 17 用例     | uniform 编码字节级校验、WGSL 生成、拓扑排序、OpDef 形状推导                                                                        |
-| `tests/gpu/`       | **23 用例** | 逐元素 / 广播 / 一元链 / 惰性链 / matmul 3 种尺寸 / 全部归约 / argmax / softmax / slice / concat / reshape 视图 / 深流水线 / 低层 Kernel |
+| `tests/unit/`      | 21 用例     | uniform 编码字节级校验、WGSL 生成、拓扑排序、OpDef 形状推导                                                                        |
+| `tests/gpu/`       | **27 用例** | 逐元素 / 广播 / 一元链 / 惰性链 / matmul 3 种尺寸 / 全部归约 / argmax / softmax / slice / concat / reshape 视图 / 深流水线 / 低层 Kernel |
 | `tests/gpu/bench/` | 微基准       | elementwise / matmul / 归约 / 链式(中位数统计)                                                                          |
 
 GPU 用例全部与 **CPU 参考实现**逐值比对(matmul / softmax / argmax / argmin 均有 CPU 版),不是「不崩就算过」。
@@ -492,7 +495,7 @@ chromium \
 | 命令                       | 作用                              |
 | ------------------------ | ------------------------------- |
 | `pnpm build`             | tsup 构建 ESM / CJS / IIFE + d.ts |
-| `pnpm test`              | 17 单元测试                         |
+| `pnpm test`              | 21 单元测试                         |
 | `pnpm test:gpu`          | 27 GPU 端到端(自动 SwiftShader/xvfb) |
 | `pnpm test:all`          | 两者都跑                            |
 | `pnpm bench`             | 微基准                             |
@@ -502,6 +505,8 @@ chromium \
 ---
 
 ## 浏览器演示
+
+🌐 **在线直接体验(无需安装)**:[https://codecloud-dev.github.io/moxwebgpu/demo/](https://codecloud-dev.github.io/moxwebgpu/demo/) —— 用你自己的 GPU 当场算给你看。
 
 [`examples/browser/index.html`](examples/browser/index.html) 是一个自包含的液态玻璃演示页:近黑底、青→靛强调色、顶部高光反射、折射边、指针跟随光斑、缓慢漂移的环境光。
 
@@ -548,13 +553,13 @@ moxwebgpu/
 │           ├── shape.ts         # transpose / slice / concat
 │           └── nn.ts            # softmax
 ├── tests/
-│   ├── unit/core.test.ts        # 17 个单元测试(编码 / 图 / OpDef)
+│   ├── unit/core.test.ts        # 21 个单元测试(编码 / 图 / OpDef)
 │   └── gpu/
 │       ├── harness.ts           # Chrome + SwiftShader + xvfb 自动化套壳
 │       ├── ref.ts               # CPU 参考实现(matmul/softmax/argmax/argmin)
 │       ├── basics.test.ts       # 逐元素与低层 Kernel(8)
 │       ├── matmul.test.ts       # 矩阵乘(3)
-│       ├── reduce.test.ts       # 归约/softmax/形状/深流水线(12)
+│       ├── reduce.test.ts       # 归约/softmax/形状/深流水线(16)
 │       └── bench/bench.test.ts  # 微基准(独立 config,不进默认套件)
 ├── scripts/
 │   └── run-gpu-tests.sh         # VK_ICD 探测 + xvfb-run 包装(支持配置覆盖)
@@ -596,15 +601,16 @@ moxwebgpu/
 
 ## 路线图
 
-- [x] **v0.1** —— 三层架构、30+ 算子、23 个真实 GPU e2e、液态玻璃演示
+- [x] **v0.1** —— 三层架构、30+ 算子、27 个真实 GPU e2e、液态玻璃演示
 - [x] **v0.2** —— 任意轴归约(任意 rank/负轴)、整型归约修复、调度器 temp 回收加固
 - [ ] 自动微分(反向图叠加在现有 lazy graph 上)
 - [ ] 更多 NN 算子:layernorm / embedding / conv1d
 - [ ] 相邻逐元素算子的 pass 融合(进一步压 dispatch 次数)
 - [ ] Web Worker / OffscreenCanvas 内运行
-- [ ] npm 首次发布与文档站
+- [ ] npm 首次发布(即将发布)
+- [x] 文档站上线
 
-> 更新节奏取决于项目的被需要程度——见[支持我们](#支持我们)。
+> 有想要的功能或方向,欢迎提 Issue 一起讨论。
 
 ---
 
@@ -638,15 +644,15 @@ A:遵循 WGSL 语义(按位回绕)。归约 identity、编码器、读回视图�
 
 ## 支持我们
 
-moxwebgpu 是一个独立开发的免费开源项目。如果它帮你省下了写 WebGPU 样板代码的时间,**求一个 Star、点个关注**——对一个独立小项目来说,这是天大的鼓励,也是它持续更新的最大动力。
+moxwebgpu 是一个独立开发的免费开源项目,会持续维护和更新。**如果它帮你省下了写 WebGPU 样板代码的时间,欢迎给一个 ⭐ Star** —— 对一个独立小项目来说,这是最大的鼓励,也是让更多需要它的人能找到它的方式。
 
-**这个项目会一直更新下去,而「有没有人用它」直接决定更新多少**:有人赞助,就有人半夜帮你的 matmul 调 tile 尺寸;没人赞助,它就靠下班时间慢慢长大。赞助通道(爱发电等)即将开放,敬请期待——在此之前,Star、转发、在项目里用它并告诉我用在哪,就是最好的赞助。
+如果它对你的工作有实际帮助,也可以通过下面的通道支持开发:
 
-- 在 GitHub 上点 ⭐ Star:点开仓库右上角的 Star
-- 关注仓库 / 加入 [Discussions](https://github.com/codecloud-dev/moxwebgpu/discussions),第一时间收到更新
-- 把 moxwebgpu 转发给任何被 WebGPU 样板代码折磨过的开发者
+- 爱发电:https://afdian.com/a/cloudharbor
 
-也欢迎任何形式的共建:报 bug、提建议、交代码、写文档、做翻译。独立开发者 + AI 协作,但每一个方向都由人拍板。
+在此之前,**Star、转发、把它用起来并告诉我用在哪里**,就是最好的支持。
+
+也欢迎任何形式的共建:报 bug、提建议、交代码、写文档、做翻译。开发者主导设计 + AI 协作实现,每个方向都由人拍板。
 
 ---
 

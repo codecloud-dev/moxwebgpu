@@ -36,7 +36,7 @@
 ### 测试
 
 - GPU e2e +4:3D 任意轴(轴 0/1/2、负轴、mean)、i32 全局、u32 全局(含 0 元素)、
-  i32 按轴;单测 +axisReduceOpDef outShape / normAxis 共 7 用例。
+  i32 按轴;单测 +axisReduceOpDef outShape / normAxis 共 4 用例(17 → 21)。
 
 ## [0.1.0] - 2026-10-02
 
