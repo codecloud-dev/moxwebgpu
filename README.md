@@ -157,9 +157,9 @@ WebGPU 的 compute pipeline 能力极强,但裸用它做一次向量加法,你�
 
 ## 安装
 
-> ⚠️ **npm / CDN 尚未发布**:`moxwebgpu` 目前还没有发布到 npm,下方「方式一(CDN)」「方式二(npm)」的 `unpkg` 与 `npm install` **暂不可用**(在线会 404)。请先走「方式三:从源码构建」,或直接在浏览器体验[在线演示](#浏览器演示)。发布后本节会更新。
+> ✅ **已发布到 npm**:`moxwebgpu@1.0.0` 已可在 npm 安装,CDN 走 unpkg 即可。本节的「方式一」「方式二」现已可用;发布通过 GitHub OIDC 可信发布完成,无需任何长效 token(见仓库 `.github/workflows/publish.yml`)。
 
-### 方式一:浏览器 `<script>`(零构建,即将发布)
+### 方式一:浏览器 `<script>`(零构建)
 
 ```html
 <script src="https://unpkg.com/moxwebgpu/dist/moxwebgpu.browser.js"></script>
@@ -171,7 +171,7 @@ WebGPU 的 compute pipeline 能力极强,但裸用它做一次向量加法,你�
 
 IIFE 产物暴露全局 `MoxWebGPU`,内含 `mox`、`MoxContext`、`Tensor`、`Kernel` 等全部导出。
 
-### 方式二:npm(Node / 打包器,即将发布)
+### 方式二:npm(Node / 打包器)
 
 ```bash
 npm install moxwebgpu
@@ -309,6 +309,43 @@ const res = await k.run([a.data, out], { elements: 5 });
 gpu.destroy();   // 归还并销毁全部池化 buffer + device(页面卸载前调用)
 t.destroy();      // 单个张量释放(通常不需要,池会自动回收中间结果)
 ```
+
+---
+
+### 10. 自动微分（反向模式 / 训练）
+
+moxwebgpu 1.0 起内置**反向模式自动微分**,直接叠加在现有惰性计算图上——`OpDef` 只是纯元数据 + codegen,每个算子附带一个 `backward`,反向图天然复用同一套算子,只有当你读取梯度时才上 GPU。
+
+```ts
+import { mox } from 'moxwebgpu';
+
+const gpu = await mox.init();
+const x = gpu.tensor([1, 2, 3, 4]).withGrad();   // 标记可微叶子
+const loss = x.mul(x).sum();                       // L = Σ x²
+
+loss.backward();                                   // 反向传播
+console.log(await x.grad.toArray());               // [2, 4, 6, 8] = dL/dx
+```
+
+三个要点:
+
+- **`.withGrad()`**:标记该叶子张量需要梯度(其余叶子默认不计)。
+- **`.backward()`**:从标量 loss 出发,逆拓扑序传播,把梯度填进每个 `requiresGrad` 叶子的 **`.grad`**。整个过程只建惰性图,**不碰 GPU**,直到你 `await x.grad.toArray()`。
+- **广播正确**:二元算子的梯度会用 `sumTo` 自动归约回较小操作数的形状;`sum/mean/softmax` 的梯度用 `expand` 复制回去。
+
+```ts
+// 一个最小线性层的前向 + 反向
+const W = gpu.tensor([[0.1, 0.2], [0.3, 0.4]]).withGrad();
+const inp = gpu.tensor([1, 1]);
+const pred = W.matmul(inp);          // [2]
+const loss = pred.mul(pred).sum();   // Σ pred²
+loss.backward();
+console.log(await W.grad.toArray());  // dL/dW,形状与 W 一致
+```
+
+**已支持反向的算子**:加/减/乘/除(含标量、含广播)、neg/abs/exp/log/sqrt/square/relu/sigmoid/tanh、matmul、sum/mean(全局与任意轴)、softmax(沿末轴,数值稳定)。
+
+> 路线图中 layernorm / embedding / conv1d、pass 融合、Web Worker 运行属于 **1.0.x 后续规划**,本版未做——给后续更新留空间。
 
 ---
 
@@ -603,11 +640,11 @@ moxwebgpu/
 
 - [x] **v0.1** —— 三层架构、30+ 算子、27 个真实 GPU e2e、液态玻璃演示
 - [x] **v0.2** —— 任意轴归约(任意 rank/负轴)、整型归约修复、调度器 temp 回收加固
-- [ ] 自动微分(反向图叠加在现有 lazy graph 上)
-- [ ] 更多 NN 算子:layernorm / embedding / conv1d
-- [ ] 相邻逐元素算子的 pass 融合(进一步压 dispatch 次数)
-- [ ] Web Worker / OffscreenCanvas 内运行
-- [ ] npm 首次发布(即将发布)
+- [x] **v1.0** —— 反向模式自动微分(叠加在现有 lazy graph 上)、matmul/softmax/sum/mean 反向、OIDC 免 token 发布到 npm
+- [ ] 更多 NN 算子:layernorm / embedding / conv1d(规划中,1.0.x)
+- [ ] 相邻逐元素算子的 pass 融合(进一步压 dispatch 次数,规划中)
+- [ ] Web Worker / OffscreenCanvas 内运行(规划中)
+- [x] npm 首次发布
 - [x] 文档站上线
 
 > 有想要的功能或方向,欢迎提 Issue 一起讨论。
@@ -626,7 +663,7 @@ A:99% 是 WGSL 编译失败(静默 no-op)。moxwebgpu 已把编译错误打印�
 A:它们是「模型中心」:面向推理预置模型。moxwebgpu 是「算子中心」:给你 NumPy 式的原始计算能力 + 逃生舱,恰好可以作为它们没有的那层「通用 GPGPU 地基」。
 
 **Q:支持训练(反向传播)吗?**  
-A:暂不支持,自动微分在路线图第一位(现有 lazy graph 天然适合叠加反向图)。
+A:支持。1.0.0 起内置反向模式自动微分:对叶子张量调 `.withGrad()`,正向建图后调 `.backward()`,梯度即填到 `.grad`(惰性,需要时才上 GPU)。详见[自动微分](#10-自动微分反向模式--训练)。
 
 **Q:为什么我的机器跑 `pnpm test:gpu` 也能过?我没有 N 卡。**  
 A:因为 SwiftShader——Chrome 自带的纯软件 Vulkan 实现。moxwebgpu 的 GPU 测试配方**不要求真显卡**,CI 上也一样。

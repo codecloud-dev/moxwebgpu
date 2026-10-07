@@ -11,6 +11,7 @@ import type { MoxContext } from '../core/context.js';
 import type { GpuDataBuffer } from '../core/buffer.js';
 import type { LazyNode, OpDef } from '../graph/lazy.js';
 import { createNode } from '../graph/lazy.js';
+import { backward as backwardImpl } from '../graph/autograd.js';
 import { numElements, asTypedArray, type DType } from '../core/dtype.js';
 
 export interface TensorOptions {
@@ -31,6 +32,26 @@ export class Tensor {
 
   get size(): number {
     return numElements(this.shape);
+  }
+
+  /** Whether `backward()` should populate `.grad` for this leaf. */
+  requiresGrad = false;
+
+  /** Accumulated gradient after `backward()`; null until then. */
+  grad: Tensor | null = null;
+
+  /** Mark this leaf as differentiable and return it (chainable). */
+  withGrad(): Tensor {
+    this.requiresGrad = true;
+    return this;
+  }
+
+  /**
+   * Reverse-mode autodiff: fills `.grad` on every `requiresGrad` leaf.
+   * Builds the gradient graph lazily — no GPU work until a grad is read.
+   */
+  backward(): void {
+    backwardImpl(this);
   }
 
   get ndim(): number {
@@ -167,6 +188,9 @@ export interface Tensor {
 
   // nn
   softmax(): Tensor;
+
+  // autograd helpers
+  expand(shape: number[]): Tensor;
 
   // dtype conversion
   cast(dtype: DType): Tensor;

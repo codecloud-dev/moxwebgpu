@@ -9,6 +9,23 @@
 
 import type { DType } from '../core/dtype.js';
 import type { GpuDataBuffer } from '../core/buffer.js';
+import type { Tensor } from '../tensor/tensor.js';
+
+/**
+ * Reverse-mode gradient of an op.
+ *  - `inputs`  : the original input Tensors (leaves or node-backed), in order
+ *  - `output`  : a Tensor view of this node's output
+ *  - `gradOutput`: upstream gradient w.r.t. this node's output
+ *  - returns one gradient Tensor (or null) per input, matching input order.
+ * Gradients are themselves lazy tensors, so the whole backward graph reuses
+ * the existing op set and only touches the GPU when materialized.
+ */
+export type BackwardFn = (
+  inputs: Tensor[],
+  output: Tensor,
+  gradOutput: Tensor,
+  attrs: any,
+) => (Tensor | null)[];
 
 /**
  * One GPU compute pass inside an op's execution plan.
@@ -58,6 +75,8 @@ export interface OpDef {
   outDtype?: (inputDtypes: DType[], attrs: any) => DType;
   /** Build the GPU execution plan for this node. */
   build: (inputShapes: number[][], inputDtypes: DType[], attrs: any) => OpPlan;
+  /** Optional reverse-mode gradient (see BackwardFn). Absent = no gradient. */
+  backward?: BackwardFn;
 }
 
 /** A downstream reference: either another lazy node or a leaf tensor. */

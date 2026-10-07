@@ -1,0 +1,47 @@
+# 通过 GitHub OIDC「可信发布」把包发到 npm —— 全程不需要任何长效 token。
+#
+# 前置（仅此一次，由仓库拥有者在 npm 网页完成，不传 token）：
+#   1. 登录 npmjs.com → 进入包 moxwebgpu → Settings → Trusted Publishers
+#   2. Add Publisher：
+#        - Publisher: GitHub Actions
+#        - Repository: codecloud-dev/moxwebgpu
+#        - Workflow name: publish.yml
+#        - Environment: （留空）
+#   3. 保存。
+# 配置好后，本流程在推送 `v*` tag 时自动 `pnpm publish --provenance`，
+# npm 会用 GitHub 临时签发的 OIDC 令牌完成发布（带 provenance 溯源）。
+# 若未配置就推了 tag：本流程会失败（无害），去网页配置后「Re-run」该次运行即可。
+
+name: Publish to npm (OIDC)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # 供 npm OIDC 签发临时令牌
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Publish (provenance, no token)
+        run: pnpm publish --provenance --no-git-checks --access public

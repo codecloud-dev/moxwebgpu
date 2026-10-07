@@ -1,7 +1,7 @@
 {
   "name": "moxwebgpu",
-  "version": "0.2.0",
-  "description": "⚡ A WebGPU compute (GPGPU) framework — typed tensors, raw kernels and a lazy compute graph, in one tiny package.",
+  "version": "1.0.0",
+  "description": "⚡ A WebGPU compute (GPGPU) framework — typed tensors, raw kernels and a lazy compute graph, with reverse-mode autodiff, in one tiny package.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -15,8 +15,13 @@
     "./browser": "./dist/moxwebgpu.browser.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run --config vitest.config.ts",

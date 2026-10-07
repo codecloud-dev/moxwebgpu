@@ -22,19 +22,25 @@ export {
 
 // ---- tensor ----
 export { Tensor, type TensorLike, type TensorOptions } from './tensor/tensor.js';
-export type { OpDef, KernelStep, LazyNode, OpPlan, BindingSpec } from './graph/lazy.js';
+export type { OpDef, KernelStep, LazyNode, OpPlan, BindingSpec, BackwardFn } from './graph/lazy.js';
 export { createNode, topoSort } from './graph/lazy.js';
 export { Scheduler } from './graph/scheduler.js';
 export { PipelineCache } from './graph/pipelineCache.js';
+
+// ---- autograd ----
+export { backward, sumTo } from './graph/autograd.js';
 
 // ---- codegen (for building custom ops) ----
 export * from './tensor/codegen.js';
 
 // ---- version ----
-export const MOXWEBGPU_VERSION = '0.2.0';
+export const MOXWEBGPU_VERSION = '1.0.0';
 
 import { Tensor } from './tensor/tensor.js';
 import { installTensorOps } from './tensor/ops/index.js';
+import { installBackward } from './tensor/ops/backward.js';
 
 // Install the unified chainable op API (add/matmul/sum/softmax/...) once.
 installTensorOps(Tensor.prototype);
+// Attach reverse-mode gradients to the built-in ops.
+installBackward();

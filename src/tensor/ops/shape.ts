@@ -130,3 +130,51 @@ function this_outShape(shapes: number[][], axis: number): number[] {
   out[axis] = shapes.reduce((acc, s) => acc + s[axis], 0);
   return out;
 }
+
+/* ------------------------------------------------------------------ */
+/* Expand (tile a tensor up to a larger shape)                        */
+/* ------------------------------------------------------------------ */
+
+const WGSL_DTYPE: Record<DType, string> = { f32: 'f32', i32: 'i32', u32: 'u32' };
+
+/**
+ * Broadcast/broadcast-free tiling: output element `i` reads `input[i % N]`.
+ * Used by the autograd reducer (sum/mean/softmax backward) to replicate a
+ * reduced gradient back to the input's shape.
+ */
+export const expandDef: OpDef = {
+  name: 'expand',
+  outShape: (_shapes, attrs) => attrs.shape as number[],
+  build: (shapes, dtypes, attrs) => {
+    const dtype = dtypes[0];
+    const inN = numElements(shapes[0]);
+    const outN = numElements(attrs.shape as number[]);
+    const dt = WGSL_DTYPE[dtype];
+    const wgsl = `
+struct U { n: u32, inN: u32, _p0: u32, _p1: u32 };
+@group(0) @binding(0) var<uniform> u: U;
+@group(0) @binding(1) var<storage, read> input: array<${dt}>;
+@group(0) @binding(2) var<storage, read_write> output: array<${dt}>;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let i = gid.x;
+  if (i >= u.n) { return; }
+  output[i] = input[i % u.inN];
+}`;
+    const step: KernelStep = {
+      key: `expand:${dtype}`,
+      wgsl,
+      bindings: [{ kind: 'uniform' }, { kind: 'read', input: 0 }, { kind: 'rw', output: true }],
+      uniforms: () => {
+        const ab = new ArrayBuffer(16);
+        const dv = new DataView(ab);
+        dv.setUint32(0, outN, true);
+        dv.setUint32(4, inN, true);
+        return ab;
+      },
+      workgroups: () => [Math.ceil(outN / 64), 1, 1],
+    };
+    return { steps: [step] };
+  },
+};
+

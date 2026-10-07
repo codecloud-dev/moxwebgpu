@@ -21,7 +21,7 @@ import {
   normAxis,
 } from './reduce.js';
 import { matmulDef } from './matmul.js';
-import { transposeDef, sliceDef, concatDef } from './shape.js';
+import { transposeDef, sliceDef, concatDef, expandDef } from './shape.js';
 import { softmaxDef } from './nn.js';
 
 function binaryMethod(def: OpDef, scalarDef: OpDef) {
@@ -155,6 +155,11 @@ export function installTensorOps(proto: object): void {
 
   /* ---- nn ---- */
   p.softmax = unaryMethod(softmaxDef);
+
+  /* ---- autograd helpers ---- */
+  p.expand = function (this: Tensor, shape: number[]): Tensor {
+    return this.apply(expandDef, [this], { shape });
+  };
 
   /* ---- dtype conversion ---- */
   p.cast = function (this: Tensor, dtype: DType): Tensor {
