@@ -36,6 +36,7 @@
 - [安装](#安装)
 - [快速上手](#快速上手)
 - [统一 API 参考](#统一-api-参考)
+- [浏览器在线训练实战](#浏览器在线训练实战)
 - [算子清单](#算子清单)
 - [数据类型与内存布局](#数据类型与内存布局)
 - [错误处理与调试](#错误处理与调试)
@@ -341,6 +342,47 @@ console.log(await W.grad.toArray());  // dL/dW,形状与 W 一致
 **已支持反向的算子**:加/减/乘/除(含标量、含广播)、neg/abs/exp/log/sqrt/square/relu/sigmoid/tanh、matmul、sum/mean(全局与任意轴)、softmax(沿末轴,数值稳定)。
 
 > 路线图中 layernorm / embedding / conv1d、pass 融合、Web Worker 运行属于 **1.0.x 后续规划**,本版未做——给后续更新留空间。
+
+---
+
+### 🚀 浏览器在线训练实战（无需安装，浏览器里当场训一个模型）
+
+> **这是 moxwebgpu 最被低估的能力**：它不止能做单次 GPGPU 计算，还能在**浏览器里跑完整的自动微分 + 梯度下降训练循环**——数据不用出浏览器、不依赖任何后端，笔记本 / 手机 / 树莓派只要有 WebGPU 就能训。配合前面说的「前端直接 `<script>` 引入 SDK」，任意网站都能让访客的 GPU 当场帮你训练一个小模型。
+
+下面用核心逻辑跑通一个 **线性回归（最小二乘 / MSE）**，梯度真的在 GPU 上算：
+
+```ts
+import { mox } from 'moxwebgpu';
+const gpu = await mox.init();
+
+// 造一点训练数据：y ≈ 2x + 1
+const X = gpu.tensor([[0], [1], [2], [3]]);
+const Y = gpu.tensor([[1], [3], [5], [7]]);
+
+const lr = 0.05;
+let W = gpu.tensor([[0]]).withGrad();   // 可微参数
+let b = gpu.tensor([[0]]).withGrad();
+
+for (let step = 0; step < 200; step++) {
+  const pred = X.matmul(W).add(b);                       // 前向：ŷ = X·W + b
+  const loss = pred.sub(Y).mul(pred.sub(Y)).mean();      // MSE
+  loss.backward();                                       // 反向：梯度填进 W.grad / b.grad（惰性，未上 GPU）
+
+  const wn = await W.sub(W.grad.mul(lr)).toArray();      // 手写 SGD 一步
+  const bn = await b.sub(b.grad.mul(lr)).toArray();
+  W = gpu.tensor(wn).withGrad();                         // 重建张量并重新标记可微
+  b = gpu.tensor(bn).withGrad();
+}
+console.log('训完的 W =', await W.toArray(), 'b =', await b.toArray());  // ≈ [[2]], [[1]]
+```
+
+要点：
+
+- **前向 / 反向全在惰性计算图上**：`backward()` 只建图、填 `.grad`，直到你 `await ...toArray()` 才真正下发 GPU——省得每一步都来回拷数据。
+- **目前没有内置优化器**：训练需手写 `W = W - lr * W.grad`（如上）。`SGD / Adam` 已在路线图上。
+- **想看真·在线演示？** 打开 [`examples/browser`](examples/browser/index.html) 或文档站的「在线演示」，你的 GPU 会当场把模型训给你看；也欢迎把它塞进你自己的网页（见 [浏览器演示](#浏览器演示)）。
+
+> 📌 训练刚需「可微」：`withGrad()` 标记的叶子才会累积 `.grad`，其余张量默认不计梯度，省显存。
 
 ---
 
