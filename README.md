@@ -4,26 +4,20 @@
 
 <h1 align="center">moxwebgpu</h1>
 
-<p align="center">  
-  <b>把 WebGPU 通用计算变成一行代码</b>  
-  
-  类型化张量 · 惰性计算图 · 原始 Kernel —— 三层能力装进一个零依赖的 TypeScript 包  
+<p align="center">
+  <img src="https://img.shields.io/github/actions/workflow/status/codecloud-dev/moxwebgpu/ci.yml?branch=main&label=CI&color=8a7bff" alt="CI">
+  <img src="https://img.shields.io/github/stars/codecloud-dev/moxwebgpu?style=social" alt="GitHub Stars">
+  <img src="https://img.shields.io/github/discussions/codecloud-dev/moxwebgpu?label=Discussions&color=ff7ac3" alt="社区讨论">
+  <img src="https://img.shields.io/badge/version-1.0.1-8a7bff" alt="version">
+  <img src="https://img.shields.io/badge/npm-publish%20pending-ffb000" alt="npm">
+  <img src="https://img.shields.io/badge/license-MIT-37d5d3" alt="license">
+  <img src="https://img.shields.io/badge/WebGPU-GPGPU-8a7bff?logo=webgpu&logoColor=white" alt="WebGPU">
+  <img src="https://img.shields.io/badge/deps-0-37d5d3" alt="zero deps">
+  <img src="https://img.shields.io/badge/tests-48%20passing-3DDC84" alt="tests">
+  <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Ops-30%2B-ff7ac3" alt="ops">
 </p>
 
-<p align="center">  
-  <a href="https://github.com/codecloud-dev/moxwebgpu/actions"><img src="https://img.shields.io/github/actions/workflow/status/codecloud-dev/moxwebgpu/ci.yml?branch=main\&label=CI\&color=8a7bff" alt="CI"></a>  
-  <a href="https://github.com/codecloud-dev/moxwebgpu/stargazers"><img src="https://img.shields.io/github/stars/codecloud-dev/moxwebgpu?style=social" alt="GitHub Stars"></a>  
-  <a href="https://github.com/codecloud-dev/moxwebgpu/discussions"><img src="https://img.shields.io/github/discussions/codecloud-dev/moxwebgpu?label=Discussions\&color=ff7ac3" alt="社区讨论"></a>  
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/codecloud-dev/moxwebgpu?color=37d5d3" alt="许可证 MIT"></a>  
-    
-  
-  <img src="https://img.shields.io/badge/WebGPU-GPGPU-8a7bff?logo=webgpu\&logoColor=white" alt="WebGPU GPGPU">  
-  <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript\&logoColor=white" alt="TypeScript 5.x">  
-  <img src="https://img.shields.io/badge/Runtime_Deps-0-37d5d3" alt="运行时零依赖">  
-  <img src="https://img.shields.io/badge/Bundle-IIFE·ESM·CJS-2088FF" alt="三产物">  
-  <img src="https://img.shields.io/badge/Tests-27%20GPU_e2e\_%2B_21_unit-3DDC84" alt="测试覆盖">  
-  <img src="https://img.shields.io/badge/Ops-30%2B-ff7ac3" alt="算子数量">  
-</p>
 
 <p align="center">
   <b>中文</b> · <a href="README.en.md">English</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/docs/">📖 文档站(中/EN 一键切换)</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/demo/">🚀 在线演示</a>
@@ -60,7 +54,7 @@
 
 ---
 
-## 项目概览
+## 📦 项目概览
 
 **moxwebgpu** = **MoX** + **WebGPU**:一个面向浏览器的 **WebGPU 通用计算(GPGPU)框架**。它把 WebGPU 底层繁琐的适配器管理、管线构建、缓冲区生命周期、数据读回全部封装起来,对外暴露三层递进式 API:
 
@@ -83,7 +77,7 @@
 
 ---
 
-## 关于本项目
+## 💡 关于本项目
 
 moxwebgpu 是一个独立的开源库:把浏览器里「本该简单」的 WebGPU 通用计算能力,认真重造一遍。
 
@@ -95,7 +89,7 @@ moxwebgpu 是一个独立的开源库:把浏览器里「本该简单」的 WebGP
 
 ---
 
-## 为什么需要 moxwebgpu
+## 🤔 为什么需要 moxwebgpu
 
 WebGPU 的 compute pipeline 能力极强,但裸用它做一次向量加法,你要亲手闯过五关:
 
@@ -113,7 +107,7 @@ WebGPU 的 compute pipeline 能力极强,但裸用它做一次向量加法,你�
 
 ---
 
-## 三层架构
+## 🏗️ 三层架构
 
 ```text
 ┌───────────────────────────────────────────────────────────────────┐
@@ -139,7 +133,7 @@ WebGPU 的 compute pipeline 能力极强,但裸用它做一次向量加法,你�
 └───────────────────────────────────────────────────────────────────┘
 ```
 
-### 一次 `.add(1).sum().item()` 的完整生命周期
+### 🔹 一次 `.add(1).sum().item()` 的完整生命周期
 
 1. `gpu.tensor([...])` 上传数据到池内 storage buffer(Tensor 持有,惰性)。
 2. `.add(1)` → 在计算图上挂一个 `add-scalar` 节点,**未执行**。
@@ -155,11 +149,11 @@ WebGPU 的 compute pipeline 能力极强,但裸用它做一次向量加法,你�
 
 ---
 
-## 安装
+## 📦 安装
 
-> ✅ **已发布到 npm**:`moxwebgpu@1.0.0` 已可在 npm 安装,CDN 走 unpkg 即可。本节的「方式一」「方式二」现已可用;发布通过 GitHub OIDC 可信发布完成,无需任何长效 token(见仓库 `.github/workflows/publish.yml`)。
+> 🟡 **待发布到 npm（配置已就绪）**：`package.json` 已就位（`version: 1.0.1`，`prepublishOnly` 会自动构建），OIDC 免 token 发布流程已配好（见 `.github/workflows/publish.yml`）。等你绑定 npm 账号后执行一次 `npm publish` 即上线；此前可用下方「方式三：从源码构建」或在线 Demo。
 
-### 方式一:浏览器 `<script>`(零构建)
+### 🌐 方式一:浏览器 `<script>`(零构建)
 
 ```html
 <script src="https://unpkg.com/moxwebgpu/dist/moxwebgpu.browser.js"></script>
@@ -171,11 +165,12 @@ WebGPU 的 compute pipeline 能力极强,但裸用它做一次向量加法,你�
 
 IIFE 产物暴露全局 `MoxWebGPU`,内含 `mox`、`MoxContext`、`Tensor`、`Kernel` 等全部导出。
 
-### 方式二:npm(Node / 打包器)
+### 🔹 方式二:npm(Node / 打包器)
 
 ```bash
 npm install moxwebgpu
 # pnpm add moxwebgpu  /  yarn add moxwebgpu
+
 ```
 
 ```ts
@@ -183,7 +178,7 @@ import { mox } from 'moxwebgpu';          // ESM
 // const { mox } = require('moxwebgpu');  // CJS
 ```
 
-### 方式三:从源码构建
+### 🔹 方式三:从源码构建
 
 ```bash
 git clone https://github.com/codecloud-dev/moxwebgpu.git
@@ -194,11 +189,11 @@ pnpm build            # 产物输出到 dist/
 
 ---
 
-## 快速上手
+## 🚀 快速上手
 
 以下示例默认 `const gpu = await mox.init();` 已执行。
 
-### 1. 第一个张量
+### 🔹 1. 第一个张量
 
 ```ts
 const a = gpu.tensor([1, 2, 3, 4]);                       // 一维,自动推断 shape=[4]
@@ -206,7 +201,7 @@ const m = gpu.tensor([[1, 2, 3], [4, 5, 6]]);             // 二维,shape=[2,3]
 const t = gpu.tensor(flatData, { shape: [128, 128] });    // TypedArray + 显式形状
 ```
 
-### 2. 链式调用与惰性求值
+### 🔹 2. 链式调用与惰性求值
 
 ```ts
 // 写法像 NumPy,执行像 CUDA 图
@@ -218,7 +213,7 @@ const r = await gpu.tensor([1, 2, 3, 4])
   .item();     // 140 —— 读回时整条链才执行,且只执行一次
 ```
 
-### 3. 广播
+### 🔹 3. 广播
 
 ```ts
 const A = gpu.tensor([[1, 2, 3], [10, 20, 30]]);   // [2,3]
@@ -233,7 +228,7 @@ await A.add(gpu.tensor([1, 2])).toArray();
 // ❌ 抛错:形状不合法绝不静默广播
 ```
 
-### 4. 矩阵乘法
+### 🔹 4. 矩阵乘法
 
 ```ts
 const a = gpu.tensor([[1, 2], [3, 4]]);
@@ -242,7 +237,7 @@ await a.matmul(b).toArray();   // [19, 22, 43, 50]
 // 16×16 workgroup 分块;[512,512] 级别同样一条命令
 ```
 
-### 5. 归约与 softmax
+### 🔹 5. 归约与 softmax
 
 ```ts
 const x = gpu.tensor([[1, 2, 3, 4], [5, 6, 7, 8]]);
@@ -259,7 +254,7 @@ await x.softmax().toArray();
 // [0.032, 0.087, 0.237, 0.644, ...] —— 减最大值的数值稳定实现,逐行和恒为 1
 ```
 
-### 6. 形状操作
+### 🧮 6. 形状操作
 
 ```ts
 const v = gpu.tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
@@ -274,14 +269,14 @@ await gpu.tensor([[1, 2], [3, 4]]).concat(gpu.tensor([[5, 6]]), 0).toArray();
 const w = v.reshape([2, 5]);   // 零拷贝视图,不产生 GPU 计算
 ```
 
-### 7. 类型转换
+### 🔤 7. 类型转换
 
 ```ts
 await gpu.tensor([1.7, 2.2, -3.9]).cast('i32').toArray();  // [1, 2, -3](向零截断)
 gpu.tensor([1, 2]).toFloat().dtype;                        // 'f32'
 ```
 
-### 8. 原始 Kernel(逃生舱)
+### ⚙️ 8. 原始 Kernel(逃生舱)
 
 ```ts
 const k = gpu.kernel(`
@@ -303,7 +298,7 @@ const res = await k.run([a.data, out], { elements: 5 });
 
 > 读回长度说明:`run()` 优先使用传入的 `GpuDataBuffer.elements` 作为读回元素数(池化 buffer 会按 2 的幂字节桶向上取整,直接读原始尺寸会多读 padding)。若传入裸 `GPUBuffer`,则回退到其原始尺寸。
 
-### 9. 资源管理
+### 📦 9. 资源管理
 
 ```ts
 gpu.destroy();   // 归还并销毁全部池化 buffer + device(页面卸载前调用)
@@ -312,7 +307,7 @@ t.destroy();      // 单个张量释放(通常不需要,池会自动回收中间
 
 ---
 
-### 10. 自动微分（反向模式 / 训练）
+### 🧠 10. 自动微分（反向模式 / 训练）
 
 moxwebgpu 1.0 起内置**反向模式自动微分**,直接叠加在现有惰性计算图上——`OpDef` 只是纯元数据 + codegen,每个算子附带一个 `backward`,反向图天然复用同一套算子,只有当你读取梯度时才上 GPU。
 
@@ -349,7 +344,7 @@ console.log(await W.grad.toArray());  // dL/dW,形状与 W 一致
 
 ---
 
-## 统一 API 参考
+## 📚 统一 API 参考
 
 ### `mox.init(options?)` → `Promise<MoxContext>`
 
@@ -359,7 +354,7 @@ console.log(await W.grad.toArray());  // dL/dW,形状与 W 一致
 | `powerPreference`       | `'low-power' \| 'high-performance'` | 电耗偏好                          |
 | `requestAdapterOptions` | `GPURequestAdapterOptions`          | 其余透传                          |
 
-### MoxContext
+### 🔹 MoxContext
 
 | 成员                    | 说明                                                             |
 | --------------------- | -------------------------------------------------------------- |
@@ -372,7 +367,7 @@ console.log(await W.grad.toArray());  // dL/dW,形状与 W 一致
 | `scheduler`           | 计算图调度器(高级用法)                                                   |
 | `destroy()`           | 释放一切                                                           |
 
-### Tensor
+### 🔹 Tensor
 
 | 类别   | 成员                                                                                                |
 | ---- | ------------------------------------------------------------------------------------------------- |
@@ -390,7 +385,7 @@ console.log(await W.grad.toArray());  // dL/dW,形状与 W 一致
 
 > **惰性语义**:`add` / `matmul` / `softmax` 等只是往计算图添节点;`toArray()` / `item()` / `toBuffer()` 才触发执行。已执行节点会缓存 GPU buffer,重复读回**不会重算**。
 
-### Kernel
+### ⚙️ Kernel
 
 | 方法                                             | 说明                                     |
 | ---------------------------------------------- | -------------------------------------- |
@@ -399,7 +394,7 @@ console.log(await W.grad.toArray());  // dL/dW,形状与 W 一致
 
 约定:WGSL 里 `@group(0) @binding(i)` 的声明顺序 = `buffers[i]` 的传入顺序。
 
-### BufferPool(高级)
+### 🔹 BufferPool(高级)
 
 | 方法                                     | 说明                                  |
 | -------------------------------------- | ----------------------------------- |
@@ -410,7 +405,7 @@ console.log(await W.grad.toArray());  // dL/dW,形状与 W 一致
 
 ---
 
-## 算子清单
+## 🧮 算子清单
 
 | 家族   | 算子                                                                                                | GPU 实现                                 |
 | ---- | ------------------------------------------------------------------------------------------------- | -------------------------------------- |
@@ -426,9 +421,9 @@ console.log(await W.grad.toArray());  // dL/dW,形状与 W 一致
 
 ---
 
-## 数据类型与内存布局
+## 🔢 数据类型与内存布局
 
-### dtype
+### 🔢 dtype
 
 | dtype | WGSL  | 字节 | 读回 TypedArray  |
 | ----- | ----- | -- | -------------- |
@@ -436,7 +431,7 @@ console.log(await W.grad.toArray());  // dL/dW,形状与 W 一致
 | `i32` | `i32` | 4  | `Int32Array`   |
 | `u32` | `u32` | 4  | `Uint32Array`  |
 
-### uniform 块(全部 16 字节对齐)
+### 🔹 uniform 块(全部 16 字节对齐)
 
 | kernel 家族              | 布局                                                                                      |
 | ---------------------- | --------------------------------------------------------------------------------------- |
@@ -452,13 +447,13 @@ console.log(await W.grad.toArray());  // dL/dW,形状与 W 一致
 
 ---
 
-## 错误处理与调试
+## 🐛 错误处理与调试
 
-### WebGPU 的静默失败与 moxwebgpu 的防御
+### 🔹 WebGPU 的静默失败与 moxwebgpu 的防御
 
 WebGPU validation 错误**不抛异常**:对象变 invalid、dispatch 变 no-op。moxwebgpu 的 `PipelineCache` 在创建 `ShaderModule` 后调用 `getCompilationInfo()` **显式检查编译错误并打印**,把「全 0 之谜」变成一行可读报错。
 
-### 常见错误速查
+### 🐛 常见错误速查
 
 | 错误消息(节选)                                       | 原因与解法                                            |
 | ---------------------------------------------- | ------------------------------------------------ |
@@ -474,7 +469,7 @@ WebGPU validation 错误**不抛异常**:对象变 invalid、dispatch 变 no-op�
 
 ---
 
-## 性能与基准
+## ⚡ 性能与基准
 
 `pnpm bench` 在 SwiftShader(纯 CPU 软渲染,与 CI 同环境)上的中位数,**含 dispatch + 读回全链路**:
 
@@ -495,9 +490,9 @@ WebGPU validation 错误**不抛异常**:对象变 invalid、dispatch 变 no-op�
 
 ---
 
-## 测试与质量保证
+## 🧪 测试与质量保证
 
-### 测试矩阵
+### 🧪 测试矩阵
 
 | 套件                 | 数量        | 覆盖                                                                                                             |
 | ------------------ | --------- | -------------------------------------------------------------------------------------------------------------- |
@@ -507,7 +502,7 @@ WebGPU validation 错误**不抛异常**:对象变 invalid、dispatch 变 no-op�
 
 GPU 用例全部与 **CPU 参考实现**逐值比对(matmul / softmax / argmax / argmin 均有 CPU 版),不是「不崩就算过」。
 
-### 无 GPU 机器怎么跑真 WebGPU?(SwiftShader 配方)
+### 🔧 无 GPU 机器怎么跑真 WebGPU?(SwiftShader 配方)
 
 这是本项目沉淀的独门配方,`pnpm test:gpu` 一条命令自动完成:
 
@@ -527,7 +522,7 @@ chromium \
 
 `tests/gpu/harness.ts` 把上面四步全部自动化:探测 Chrome 与 ICD → 拉起浏览器 → 打开 https 页面 → 注入 `dist/moxwebgpu.browser.js` → 每个用例在页面里执行并与 CPU 参考值比对。**GitHub Actions 用同一配方跑 CI**(见 `.github/workflows/ci.yml`)。
 
-### 本地命令
+### 💻 本地命令
 
 | 命令                       | 作用                              |
 | ------------------------ | ------------------------------- |
@@ -541,7 +536,7 @@ chromium \
 
 ---
 
-## 浏览器演示
+## 🌐 浏览器演示
 
 🌐 **在线直接体验(无需安装)**:[https://codecloud-dev.github.io/moxwebgpu/demo/](https://codecloud-dev.github.io/moxwebgpu/demo/) —— 用你自己的 GPU 当场算给你看。
 
@@ -564,7 +559,7 @@ pnpm demo        # 构建 + 起服务,浏览器打开 http://localhost:5173
 
 ---
 
-## 项目结构
+## 📦 项目结构
 
 ```text
 moxwebgpu/
@@ -614,15 +609,15 @@ moxwebgpu/
 
 ---
 
-## 开发指南
+## 🛠️ 开发指南
 
-### 环境要求
+### 🔹 环境要求
 
 - Node ≥ 18、pnpm ≥ 9
 - 本地跑 GPU 测试需要 Chrome/Chromium(自动探测,也可 `MOXWEBGPU_CHROME=/path/to/chrome` 指定);Linux 无显示时自动包 `xvfb-run`
 - 类型检查:`pnpm exec tsc --noEmit`
 
-### 如何添加一个新算子(五步)
+### 🔧 如何添加一个新算子(五步)
 
 以 `rsqrt`(平方根倒数)为例:
 
@@ -636,7 +631,7 @@ moxwebgpu/
 
 ---
 
-## 路线图
+## 🗺️ 路线图
 
 - [x] **v0.1** —— 三层架构、30+ 算子、27 个真实 GPU e2e、液态玻璃演示
 - [x] **v0.2** —— 任意轴归约(任意 rank/负轴)、整型归约修复、调度器 temp 回收加固
@@ -651,7 +646,7 @@ moxwebgpu/
 
 ---
 
-## FAQ
+## ❓ FAQ
 
 **Q:浏览器控制台报 `navigator.gpu is undefined`?**  
 A:WebGPU 需要 Chrome/Edge 113+,且页面处于安全上下文(https 或 localhost)。`file://` 直接打开不行,用 `pnpm demo` 起本地服务。
@@ -673,13 +668,13 @@ A:遵循 WGSL 语义(按位回绕)。归约 identity、编码器、读回视图�
 
 ---
 
-## 参与进来
+## 🤝 参与进来
 
 发现 bug 或想要新算子,欢迎提 [Issue](https://github.com/codecloud-dev/moxwebgpu/issues);想贡献代码直接提 Pull Request——WGSL 算子照着[五步指南](#如何添加一个新算子五步)加一个 `OpDef` 即可,测试会告诉你对不对。
 
 ---
 
-## 支持我们
+## 💖 支持我们
 
 moxwebgpu 是一个独立开发的免费开源项目,会持续维护和更新。**如果它帮你省下了写 WebGPU 样板代码的时间,欢迎给一个 ⭐ Star** —— 对一个独立小项目来说,这是最大的鼓励,也是让更多需要它的人能找到它的方式。
 
@@ -693,10 +688,10 @@ moxwebgpu 是一个独立开发的免费开源项目,会持续维护和更新。
 
 ---
 
-## 许可证
+## 📜 许可证
 
 [MIT](LICENSE) © Codecloud —— 可自由商用、修改、分发,保留版权声明即可。
 
-## AI 辅助声明
+## 🤖 AI 辅助声明
 
 本项目(含全部代码、文档与演示页)由开发者 **Codecloud** 主导设计,**AI 辅助生成代码**:架构决策、需求定义与验收由人完成,代码实现与文档撰写由 AI 协作完成并经人工审核修订。

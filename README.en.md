@@ -4,24 +4,44 @@
 
 <h1 align="center">moxwebgpu</h1>
 
-<p align="center"><b>WebGPU GPGPU in one line of code.</b><br>
-Typed tensors, a lazy compute graph and raw kernels — one zero-dependency TypeScript package, 30+ GPU ops, tested end-to-end on real WebGPU even on machines without a GPU.</p>
-
-<p align="center"><b>English</b> · <a href="README.md">中文</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/docs/">📖 Docs (中/EN switch)</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/demo/">🚀 Live demo</a></p>
-
 <p align="center">
-  <a href="../../actions"><img src="https://img.shields.io/github/actions/workflow/status/codecloud-dev/moxwebgpu/ci.yml?branch=main&label=CI&color=8a7bff" alt="CI"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/codecloud-dev/moxwebgpu?color=37d5d3" alt="License"></a>
-  <a href="#testing--quality"><img src="https://img.shields.io/badge/tests-48%20passing-37d5d3" alt="Tests"></a>
+  <img src="https://img.shields.io/github/actions/workflow/status/codecloud-dev/moxwebgpu/ci.yml?branch=main&label=CI&color=8a7bff" alt="CI">
+  <img src="https://img.shields.io/github/stars/codecloud-dev/moxwebgpu?style=social" alt="GitHub Stars">
+  <img src="https://img.shields.io/github/discussions/codecloud-dev/moxwebgpu?label=Discussions&color=ff7ac3" alt="Discussions">
+  <img src="https://img.shields.io/badge/version-1.0.1-8a7bff" alt="version">
+  <img src="https://img.shields.io/badge/npm-publish%20pending-ffb000" alt="npm">
+  <img src="https://img.shields.io/badge/license-MIT-37d5d3" alt="license">
   <img src="https://img.shields.io/badge/WebGPU-GPGPU-8a7bff?logo=webgpu&logoColor=white" alt="WebGPU">
-  <img src="https://img.shields.io/badge/Dependencies-0-37d5d3" alt="Zero deps">
+  <img src="https://img.shields.io/badge/deps-0-37d5d3" alt="zero deps">
+  <img src="https://img.shields.io/badge/tests-48%20passing-3DDC84" alt="tests">
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
-  <img src="https://img.shields.io/node/v/%40webgpu%2Ftypes" alt="Node">
+  <img src="https://img.shields.io/badge/Ops-30%2B-ff7ac3" alt="ops">
 </p>
+
 
 ---
 
-## What it is
+<details>
+<summary>📑 目录 · Contents</summary>
+
+- [💡 What it is](#what-it-is)
+- [💡 About this project](#about-this-project)
+- [📦 Install](#install)
+- [🚀 Quick start](#quick-start)
+- [📚 Unified API](#unified-api)
+- [🐛 Error handling](#error-handling)
+- [⚡ Benchmarks](#benchmarks)
+- [🧪 Testing & quality](#testing-quality)
+- [🌐 Browser demo](#browser-demo)
+- [📦 Project structure](#project-structure)
+- [🗺️ Roadmap](#roadmap)
+- [🤝 Contributing](#contributing)
+- [💖 Supporting](#supporting)
+- [📜 License](#license)
+
+</details>
+
+## 💡 What it is
 
 Raw WebGPU compute is powerful but brutal: adapter/device boilerplate, WGSL pipelines, bind groups, manual buffer lifecycles, staging readbacks — and **validation errors are silent** (a broken shader just turns your dispatch into a no-op and your output into zeros).
 
@@ -40,7 +60,7 @@ Core     BufferPool (power-of-two buckets) · PipelineCache (WGSL hash) · raw K
 - **48 passing tests** — 27 GPU e2e (value-compared against CPU references) + 21 unit tests, green even on GPU-less machines via SwiftShader + xvfb
 - **Zero runtime dependencies**, ESM + CJS + IIFE + d.ts, ~30 KB browser bundle
 
-## About this project
+## 💡 About this project
 
 moxwebgpu is a standalone open-source library: rebuilding, properly, the WebGPU general-purpose compute capability that "should be simple" in the browser.
 
@@ -50,9 +70,9 @@ moxwebgpu is a standalone open-source library: rebuilding, properly, the WebGPU 
 
 ---
 
-## Install
+## 📦 Install
 
-> ⚠️ **npm / CDN not published yet**: `moxwebgpu` is not on npm yet, so the `unpkg` CDN and `npm install` below **do not work yet** (404 online). Use **From source** for now, or try the [live demo](#browser-demo) in your browser. This section will be updated on publish.
+> 🟡 **npm / CDN: publish pending (config ready)** — `moxwebgpu` is not on npm yet, so `npm install` / `unpkg` 404 online for now. The OIDC token-less publish flow is wired up (`.github/workflows/publish.yml`); once the npm account is linked it goes live with one `npm publish`. Meanwhile use **From source** below, or the [live demo](#browser-demo).
 
 **Browser `<script>` (zero build):**
 
@@ -86,20 +106,20 @@ cd moxwebgpu && pnpm install && pnpm build
 
 ---
 
-## Quick start
+## 🚀 Quick start
 
 ```ts
 const gpu = await mox.init();
 ```
 
-### Chained & lazy
+### 🔹 Chained & lazy
 
 ```ts
 const r = await gpu.tensor([1, 2, 3, 4])
   .add(1).relu().mul(10).sum().item();   // 140 — dispatches once
 ```
 
-### Broadcasting (explicit, never silent)
+### 🔹 Broadcasting (explicit, never silent)
 
 ```ts
 const A = gpu.tensor([[1, 2, 3], [10, 20, 30]]);  // [2,3]
@@ -108,7 +128,7 @@ await A.mul(gpu.tensor([2, 3])).toArray();      // col broadcast
 await A.add(gpu.tensor([1, 2]));                // ❌ throws — no implicit broadcasting
 ```
 
-### Matmul, reductions, softmax
+### 🔹 Matmul, reductions, softmax
 
 ```ts
 await gpu.tensor([[1, 2], [3, 4]]).matmul(gpu.tensor([[5, 6], [7, 8]])).toArray();
@@ -125,7 +145,7 @@ await x.argmax().item();   // 7 (first occurrence wins)
 await x.softmax().toArray(); // numerically stable, row sums = 1
 ```
 
-### Shapes & dtypes
+### 🔢 Shapes & dtypes
 
 ```ts
 await v.slice(2, 4).toArray();              // strided slice (≤4D)
@@ -134,7 +154,7 @@ const w = v.reshape([2, 5]);                // zero-copy view
 await gpu.tensor([1.7, -3.9]).cast('i32').toArray(); // [1, -3] (trunc toward zero)
 ```
 
-### One API for max/min
+### 📚 One API for max/min
 
 ```ts
 t.max()        // global reduce → [1]
@@ -143,7 +163,7 @@ t.max(other)   // elementwise with another tensor
 // unambiguous aliases: maxReduce / minReduce
 ```
 
-### Raw kernel escape hatch
+### ⚙️ Raw kernel escape hatch
 
 ```ts
 const k = gpu.kernel(`
@@ -165,7 +185,7 @@ const res = await k.run([a.data, out], { elements: 5 }); // → Float32Array(5) 
 
 ---
 
-## Unified API
+## 📚 Unified API
 
 ### `mox.init(options?)` → `Promise<MoxContext>`
 
@@ -175,7 +195,7 @@ const res = await k.run([a.data, out], { elements: 5 }); // → Float32Array(5) 
 | `powerPreference` | `'low-power' \| 'high-performance'` | |
 | `requestAdapterOptions` | `GPURequestAdapterOptions` | passthrough |
 
-### MoxContext
+### 🔹 MoxContext
 
 | Member | Notes |
 | ------ | ----- |
@@ -186,7 +206,7 @@ const res = await k.run([a.data, out], { elements: 5 }); // → Float32Array(5) 
 | `pool` / `pipelines` / `scheduler` | advanced |
 | `destroy()` | release everything |
 
-### Tensor
+### 🔹 Tensor
 
 | Category | Members |
 | -------- | ------- |
@@ -201,7 +221,7 @@ const res = await k.run([a.data, out], { elements: 5 }); // → Float32Array(5) 
 | Readback | `await toArray()` / `await toBuffer()` / `await item()` |
 | Release | `destroy()` |
 
-### Kernel / BufferPool
+### ⚙️ Kernel / BufferPool
 
 | API | Notes |
 | --- | ----- |
@@ -210,7 +230,7 @@ const res = await k.run([a.data, out], { elements: 5 }); // → Float32Array(5) 
 | `pool.acquire(elements, dtype)` / `acquireUniform(bytes)` | strictly separate pools |
 | `pool.release` / `releaseUniform` / `live` / `pooled` / `clear()` | stats & teardown |
 
-### Op reference
+### 🧮 Op reference
 
 | Family | Ops | GPU strategy |
 | ------ | --- | ------------ |
@@ -223,7 +243,7 @@ const res = await k.run([a.data, out], { elements: 5 }); // → Float32Array(5) 
 | NN | softmax | fused 3-pass per row |
 | Dtype | cast f32↔i32↔u32 | single pass, truncation |
 
-### dtypes & uniform layout
+### 🔢 dtypes & uniform layout
 
 | dtype | WGSL | bytes | readback |
 | ----- | ---- | ----- | -------- |
@@ -238,7 +258,7 @@ All uniform blocks are 16-byte aligned; copy-family kernels use a 64-byte vec4-b
 
 ---
 
-## Error handling
+## 🐛 Error handling
 
 WebGPU validation errors **don't throw** — objects go invalid, dispatches become no-ops. moxwebgpu's `PipelineCache` calls `getCompilationInfo()` after creating every `ShaderModule` and turns compile errors into readable line/column messages.
 
@@ -253,7 +273,7 @@ WebGPU validation errors **don't throw** — objects go invalid, dispatches beco
 
 ---
 
-## Benchmarks
+## ⚡ Benchmarks
 
 `pnpm bench`, medians on SwiftShader (pure-CPU GPU emulation, same env as CI), full dispatch + readback path:
 
@@ -270,7 +290,7 @@ Built-in performance design: lazy graph (one readback per chain), refcounted int
 
 ---
 
-## Testing & quality
+## 🧪 Testing & quality
 
 | Suite | Count | Coverage |
 | ----- | ----- | -------- |
@@ -280,10 +300,11 @@ Built-in performance design: lazy graph (one readback per chain), refcounted int
 
 GPU cases are value-compared against **CPU reference implementations** — not "didn't crash" tests.
 
-### Real WebGPU on GPU-less machines (SwiftShader recipe)
+### 🔹 Real WebGPU on GPU-less machines (SwiftShader recipe)
 
 ```bash
 # xvfb supplies a virtual display; Chrome's SwiftShader Vulkan ICD is the GPU
+
 export VK_ICD_FILENAMES=/opt/google/chrome/vk_swiftshader_icd.json
 
 # full Chromium (headless-shell has WebGPU stripped) + key flags
@@ -306,7 +327,7 @@ chromium --enable-unsafe-webgpu --enable-features=Vulkan --no-sandbox
 
 ---
 
-## Browser demo
+## 🌐 Browser demo
 
 🌐 **Try it live (no install):**[https://codecloud-dev.github.io/moxwebgpu/demo/](https://codecloud-dev.github.io/moxwebgpu/demo/) — your GPU, computing in front of you.
 
@@ -316,7 +337,7 @@ chromium --enable-unsafe-webgpu --enable-features=Vulkan --no-sandbox
 pnpm demo   # → http://localhost:5173
 ```
 
-## Project structure
+## 📦 Project structure
 
 ```text
 moxwebgpu/
@@ -337,7 +358,7 @@ moxwebgpu/
 
 Want to add an op? `OpDef` = pure metadata (shape inference + codegen) → two to five steps, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §5.
 
-## Roadmap
+## 🗺️ Roadmap
 
 - [ ] f16 / bf16 dtypes
 - [x] arbitrary-axis reductions (any rank, negative axes)
@@ -345,11 +366,11 @@ Want to add an op? `OpDef` = pure metadata (shape inference + codegen) → two t
 - [ ] multi-pass fusion in the scheduler
 - [ ] Ecosystem integrations
 
-## Contributing
+## 🤝 Contributing
 
 Issues and PRs welcome. Keep PRs focused; add tests for behavior changes. GPU-affecting changes should run `pnpm test:gpu` locally (SwiftShader works on any machine).
 
-## Supporting
+## 💖 Supporting
 
 moxwebgpu is an independently developed, free and open-source project, and will keep being maintained. **If it saves you time writing WebGPU boilerplate, a ⭐ star goes a long way** — it is what helps others find the project.
 
@@ -359,6 +380,6 @@ If it is useful in your work, you can also support development:
 
 Stars, shares, or telling me where you use it are the best support. See [FUNDING.yml](FUNDING.yml) for the channels.
 
-## License
+## 📜 License
 
 [MIT](LICENSE) © Codecloud. Designed by **Codecloud**; code co-written with AI, human-reviewed.
