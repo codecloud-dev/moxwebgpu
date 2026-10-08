@@ -1,0 +1,104 @@
+# 定时发布（引流）：每天 UTC 08:00 触发，随机休眠 0~3600s，
+# 落在 08:00–09:00 UTC 区间发布 —— 此时 GitHub 全球用户活跃度较高，
+# 便于新版本被看到（引流）。
+#
+# ⚠️ 启用前两步（缺一不可）：
+#   1) 在 npm 网页给本包配置「Trusted Publisher（GitHub OIDC）」；
+#   2) 在本仓库 Settings → Secrets and variables → Actions → Variables
+#      新建变量 ENABLE_SCHEDULED_RELEASE=true。
+# 未设该变量时，本流程每天只跑一个极快的「已禁用」判断就退出，不浪费额度、
+# 也不会在 OIDC 没配好时误发失败。
+#
+# 行为：
+#   - 仅在「距上次 tag 有未发布提交」或手动 dispatch 勾选 force 时才发版；
+#   - 自动 patch 版本号、打 v* tag、推 main、走 OIDC provenance 发布，
+#     全程无需长效 token。
+
+name: Scheduled Release (引流)
+
+on:
+  schedule:
+    - cron: '0 8 * * *'   # UTC 08:00 每天；随机休眠后落在 08:00–09:00 UTC
+  workflow_dispatch:
+    inputs:
+      force:
+        description: '强制发版（忽略「无未发布提交」判断）'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write      # 打 tag / 推 main
+  id-token: write      # 供 npm OIDC 签发临时令牌（provenance）
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 闸门（未启用则快速退出）
+        id: gate
+        run: |
+          if [ "${{ vars.ENABLE_SCHEDULED_RELEASE }}" != "true" ]; then
+            echo "::notice::定时发布未启用。请在仓库 Variables 中设置 ENABLE_SCHEDULED_RELEASE=true（并先配置 npm Trusted Publisher）。本次退出。"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+      - name: 随机落入 08:00–09:00 UTC 引流窗口
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          SEC=$(( RANDOM % 3600 ))
+          echo "随机休眠 $SEC 秒，使发布落在 UTC 08:00–09:00（GitHub 活跃高峰）"
+          sleep "$SEC"
+
+      - name: Checkout
+        if: steps.gate.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 配置 git 身份
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: 检测是否有未发布提交
+        id: change
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          LATEST=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          if [ -z "$LATEST" ]; then
+            echo "尚无任何 tag，视为有待发布内容"; echo "has_changes=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          COUNT=$(git rev-list --count "$LATEST"..HEAD)
+          if [ "$COUNT" -gt 0 ] || [ "${{ github.event.inputs.force }}" = "true" ]; then
+            echo "距 $LATEST 有 $COUNT 个未发布提交"; echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "无未发布提交，跳过（避免每日空发）"; echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Node + pnpm 环境
+        if: steps.change.outputs.has_changes == 'true'
+        uses: pnpm/action-setup@v4
+
+      - name: Node 环境
+        if: steps.change.outputs.has_changes == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: 升版本 + 打 tag + 推 main + OIDC 发布
+        if: steps.change.outputs.has_changes == 'true'
+        run: |
+          npm version patch --no-git-tag-version
+          VER=$(node -p "require('./package.json').version")
+          git add package.json pnpm-lock.yaml
+          git commit -m "chore(release): v$VER [skip ci]"
+          git tag "v$VER"
+          git push origin HEAD --follow-tags
+          pnpm install --frozen-lockfile
+          pnpm build
+          pnpm publish --provenance --no-git-checks --access public
