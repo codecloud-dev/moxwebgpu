@@ -6,13 +6,35 @@
 import type { DType } from './dtype.js';
 import { dtypeInfo } from './dtype.js';
 
+/**
+ * `GPUBufferUsage` 是浏览器 / WebGPU 全局，Node 环境下不存在。
+ * 下面的常量是顶层定义，会在 `import` 时立即求值；若直接写 `GPUBufferUsage.STORAGE`
+ * 会让整个包在 Node 下一 `require` 就 `ReferenceError` 崩溃（npm 包不可用）。
+ * 这里用标准规范位值兜底：真机 WebGPU 运行时全局存在时走全局，否则用等价常量，
+ * 保证包在 Node 下也能被 import（实际执行 GPU 命令仍需浏览器 / WebGPU 环境）。
+ */
+const GPUBufferUsageFlags = (typeof GPUBufferUsage !== 'undefined')
+  ? GPUBufferUsage
+  : {
+      MAP_READ: 0x0001,
+      MAP_WRITE: 0x0002,
+      COPY_SRC: 0x0004,
+      COPY_DST: 0x0008,
+      INDEX: 0x0010,
+      VERTEX: 0x0020,
+      UNIFORM: 0x0040,
+      STORAGE: 0x0080,
+      INDIRECT: 0x0100,
+      QUERY_RESOLVE: 0x0200,
+    };
+
 /** Usage flags shared by every storage buffer the framework creates. */
 export const STORAGE_USAGE =
-  GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST;
+  GPUBufferUsageFlags.STORAGE | GPUBufferUsageFlags.COPY_SRC | GPUBufferUsageFlags.COPY_DST;
 
-export const UNIFORM_USAGE = GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST;
+export const UNIFORM_USAGE = GPUBufferUsageFlags.UNIFORM | GPUBufferUsageFlags.COPY_DST;
 
-export const STAGING_USAGE = GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST;
+export const STAGING_USAGE = GPUBufferUsageFlags.MAP_READ | GPUBufferUsageFlags.COPY_DST;
 
 /** Round a byte size up to the WebGPU-required 4-byte alignment. */
 export function align4(n: number): number {

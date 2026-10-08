@@ -1,6 +1,6 @@
 {
   "name": "moxwebgpu",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "⚡ A WebGPU compute (GPGPU) framework — typed tensors, raw kernels and a lazy compute graph, with reverse-mode autodiff, in one tiny package.",
   "type": "module",
   "main": "./dist/index.cjs",

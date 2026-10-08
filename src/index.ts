@@ -34,7 +34,7 @@ export { backward, sumTo } from './graph/autograd.js';
 export * from './tensor/codegen.js';
 
 // ---- version ----
-export const MOXWEBGPU_VERSION = '1.0.0';
+export const MOXWEBGPU_VERSION = '1.0.1';
 
 import { Tensor } from './tensor/tensor.js';
 import { installTensorOps } from './tensor/ops/index.js';

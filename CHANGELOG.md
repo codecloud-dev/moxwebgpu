@@ -9,6 +9,18 @@
 
 计划中(见 README 路线图):f16/bf16、tensor-core matmul、多 GPU pass 融合、生态集成。
 
+## [1.0.1] - 2026-10-08
+
+### 修复
+
+- **发布阻断级 bug：Node 下 `require`/`import` 即崩溃**。根因：`src/core/buffer.ts` 顶层常量直接引用浏览器 WebGPU 全局 `GPUBufferUsage`，在 Node 环境（无该全局）`import` 时即抛 `ReferenceError`，整包不可用。改为用标准 WebGPU 位值兜底（全局存在时仍走全局），包现在可在 Node 下正常 import；实际 GPU 执行仍需浏览器 / WebGPU 运行时。
+
+## [1.0.0] - 2026-10-07
+
+### 里程碑
+
+- MoX 全家桶首个大版本：moxwebgpu 随 agent-core / moxsh 系列一同升 1.0.0 发布。
+
 ## [0.2.0] - 2026-10-02
 
 ### 新增
