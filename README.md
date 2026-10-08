@@ -37,6 +37,7 @@
 - [快速上手](#快速上手)
 - [统一 API 参考](#统一-api-参考)
 - [浏览器在线训练实战](#浏览器在线训练实战)
+- [移动端 GPU 支持](#移动端-gpu-支持)
 - [算子清单](#算子清单)
 - [数据类型与内存布局](#数据类型与内存布局)
 - [错误处理与调试](#错误处理与调试)
@@ -383,6 +384,55 @@ console.log('训完的 W =', await W.toArray(), 'b =', await b.toArray());  // �
 - **想看真·在线演示？** 打开 [`examples/browser`](examples/browser/index.html) 或文档站的「在线演示」，你的 GPU 会当场把模型训给你看；也欢迎把它塞进你自己的网页（见 [浏览器演示](#浏览器演示)）。
 
 > 📌 训练刚需「可微」：`withGrad()` 标记的叶子才会累积 `.grad`，其余张量默认不计梯度，省显存。
+
+#### 🔥 进阶：两层 MLP（隐藏层 + sigmoid）训练
+
+线性回归只是一行；真正的模型是多层。下面训一个**两层 MLP**（输入 → 隐藏层 sigmoid → 输出），用同样的手写 SGD 在 GPU 上跑梯度：
+
+```ts
+// 数据：X 是 4 个样本（各 3 维），Y 是对应 2 维标签
+const X = gpu.tensor([[0, 0, 1], [1, 0, 0], [0, 1, 0], [1, 1, 1]]);
+const Y = gpu.tensor([[0, 0], [1, 0], [1, 0], [0, 1]]);
+
+const lr = 0.1;
+let W1 = gpu.tensor([[0.1, -0.2, 0.3], [0.2, 0.1, -0.1], [-0.3, 0.2, 0.1]]).withGrad();  // [3×3]
+let b1 = gpu.tensor([[0, 0, 0]]).withGrad();                                           // [1×3]
+let W2 = gpu.tensor([[0.2, 0.1, -0.2], [0.1, -0.1, 0.3]]).withGrad();                    // [3×2]
+let b2 = gpu.tensor([[0, 0]]).withGrad();                                              // [1×2]
+
+for (let step = 0; step < 500; step++) {
+  const h   = X.matmul(W1).add(b1).sigmoid();        // 隐藏层 [4×3]
+  const out = h.matmul(W2).add(b2);                  // 输出 [4×2]
+  const loss = out.sub(Y).mul(out.sub(Y)).mean();
+  loss.backward();                                   // 反向自动处理 matmul/加偏置/sigmoid/广播
+
+  W1 = gpu.tensor(await W1.sub(W1.grad.mul(lr)).toArray()).withGrad();
+  b1 = gpu.tensor(await b1.sub(b1.grad.mul(lr)).toArray()).withGrad();
+  W2 = gpu.tensor(await W2.sub(W2.grad.mul(lr)).toArray()).withGrad();
+  b2 = gpu.tensor(await b2.sub(b2.grad.mul(lr)).toArray()).withGrad();
+}
+const pred = await X.matmul(W1).add(b1).sigmoid().matmul(W2).add(b2).toArray();
+console.log('训练后预测 =', pred);
+```
+
+> 反向传播自动处理 **matmul / 加偏置 / sigmoid / 广播**，你只需写前向 + 一步 `backward()` + 参数更新。想要 `Adam`？目前手写即可，优化器已在路线图。
+
+---
+
+## 📱 移动端 GPU 支持（手机 / 平板）
+
+moxwebgpu 是**纯浏览器 SDK**，只要设备浏览器带 WebGPU 就能直接用——**手机也不例外**：
+
+- **Android**：Chrome 121+（及 Edge、Brave 等 Chromium 系）已原生支持 WebGPU，Android 手机 / 平板直接能跑上面的训练与计算。
+- **iOS / iPadOS**：Safari 的 WebGPU 仍在渐进开放（部分版本需到 `设置 → Safari → 高级` 开启「特性标志」），目前兼容性不如 Android 稳；如需覆盖 iOS，建议后端预计算或等系统更新。
+- **特性检测**：`if (!navigator.gpu) { /* 降级 */ }` 即可判断；初始化失败会抛错，调用方用普通 `try/catch` 兜底。
+- **省电优先**：手机上建议初始化时走低功耗适配器：
+
+```ts
+const gpu = await mox.init({ powerPreference: 'low-power' });  // 移动端更省电
+```
+
+> 本仓库的 [`examples/browser`](examples/browser/index.html) 与官网演示页均为响应式，手机竖屏也能直接点按钮开跑。
 
 ---
 
