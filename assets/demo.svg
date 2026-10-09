@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 760 380" width="760" height="380" role="img"
+     aria-label="moxwebgpu 浏览器 GPU 训练动图：数据流入 GPU、损失曲线持续下降">
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b1832"/>
+      <stop offset="1" stop-color="#0d0b1a"/>
+    </linearGradient>
+    <linearGradient id="chip" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3a2f6b"/>
+      <stop offset="1" stop-color="#241d44"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8a7bff"/>
+      <stop offset="1" stop-color="#37d5d3"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <path id="flow" d="M30,210 L100,210" fill="none"/>
+  </defs>
+
+  <!-- background -->
+  <rect width="760" height="380" fill="url(#bg)"/>
+
+  <!-- title -->
+  <text x="380" y="36" text-anchor="middle" fill="#ECEAFF"
+        font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="23" font-weight="700">
+    在浏览器里用 WebGPU 训练神经网络
+  </text>
+  <text x="380" y="60" text-anchor="middle" fill="#9B96C9"
+        font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="13">
+    Browser-native GPGPU · 0 deps · TypeScript · 自动微分
+  </text>
+
+  <!-- ===== left: GPU chip + data flow ===== -->
+  <g font-family="'PingFang SC','Microsoft YaHei',sans-serif">
+    <!-- glow halo -->
+    <rect x="104" y="154" width="132" height="112" rx="18" fill="#8a7bff" opacity="0.35" filter="url(#glow)">
+      <animate attributeName="opacity" values="0.18;0.55;0.18" dur="2.4s" repeatCount="indefinite"/>
+    </rect>
+    <!-- chip body -->
+    <rect x="110" y="160" width="120" height="100" rx="14" fill="url(#chip)" stroke="#8a7bff" stroke-width="2"/>
+    <!-- chip grid -->
+    <g stroke="#5b4fa0" stroke-width="1" opacity="0.6">
+      <line x1="110" y1="190" x2="230" y2="190"/>
+      <line x1="110" y1="220" x2="230" y2="220"/>
+      <line x1="140" y1="160" x2="140" y2="260"/>
+      <line x1="170" y1="160" x2="170" y2="260"/>
+      <line x1="200" y1="160" x2="200" y2="260"/>
+    </g>
+    <text x="170" y="216" text-anchor="middle" fill="#fff" font-size="22" font-weight="700">GPU</text>
+    <!-- pins -->
+    <g fill="#8a7bff">
+      <rect x="96" y="176" width="14" height="6" rx="2"/><rect x="96" y="200" width="14" height="6" rx="2"/>
+      <rect x="96" y="224" width="14" height="6" rx="2"/>
+      <rect x="230" y="176" width="14" height="6" rx="2"/><rect x="230" y="200" width="14" height="6" rx="2"/>
+      <rect x="230" y="224" width="14" height="6" rx="2"/>
+    </g>
+    <!-- data packets flowing into chip -->
+    <circle r="5" fill="#37d5d3"><animateMotion dur="2s" repeatCount="indefinite" begin="0s"><mpath xlink:href="#flow"/></animateMotion></circle>
+    <circle r="5" fill="#ff7ac3"><animateMotion dur="2s" repeatCount="indefinite" begin="0.66s"><mpath xlink:href="#flow"/></animateMotion></circle>
+    <circle r="5" fill="#8a7bff"><animateMotion dur="2s" repeatCount="indefinite" begin="1.33s"><mpath xlink:href="#flow"/></animateMotion></circle>
+    <text x="170" y="300" text-anchor="middle" fill="#9B96C9" font-size="12">数据流入 · 张量计算</text>
+  </g>
+
+  <!-- ===== right: animated loss curve ===== -->
+  <g font-family="'PingFang SC','Microsoft YaHei',sans-serif">
+    <!-- panel -->
+    <rect x="350" y="110" width="380" height="240" rx="14" fill="#15122a" stroke="#2c2650" stroke-width="1"/>
+    <!-- grid -->
+    <g stroke="#2c2650" stroke-width="1" opacity="0.7">
+      <line x1="370" y1="150" x2="710" y2="150"/>
+      <line x1="370" y1="200" x2="710" y2="200"/>
+      <line x1="370" y1="250" x2="710" y2="250"/>
+      <line x1="370" y1="300" x2="710" y2="300"/>
+    </g>
+    <!-- axis labels -->
+    <text x="360" y="128" fill="#9B96C9" font-size="12">loss ↘</text>
+    <text x="700" y="332" text-anchor="end" fill="#9B96C9" font-size="12">step →</text>
+    <!-- the loss curve, drawn progressively, then loops (like continuous training) -->
+    <path id="losscurve" pathLength="100"
+          d="M380,140 C 440,150 462,198 512,214 S 626,300 706,316"
+          fill="none" stroke="url(#accent)" stroke-width="3.5" stroke-linecap="round"
+          stroke-dasharray="100" stroke-dashoffset="100">
+      <animate attributeName="stroke-dashoffset" from="100" to="0" dur="3.4s" repeatCount="indefinite"/>
+    </path>
+    <!-- leading dot -->
+    <circle r="6" fill="#ff7ac3">
+      <animateMotion dur="3.4s" repeatCount="indefinite" calcMode="linear"><mpath xlink:href="#losscurve"/></animateMotion>
+    </circle>
+    <!-- endpoint marker -->
+    <circle cx="706" cy="316" r="4" fill="#37d5d3"/>
+    <text x="706" y="336" text-anchor="end" fill="#37d5d3" font-size="13" font-weight="700">≈ 0</text>
+    <!-- badge -->
+    <g transform="translate(620,128)">
+      <rect x="0" y="-15" width="92" height="22" rx="11" fill="#8a7bff" opacity="0.18"/>
+      <text x="46" y="1" text-anchor="middle" fill="#C9C3FF" font-size="12" font-weight="700">⚡ WebGPU</text>
+    </g>
+  </g>
+
+  <!-- footer brand -->
+  <text x="380" y="366" text-anchor="middle" fill="#6f6a96" font-family="sans-serif" font-size="11">
+    moxwebgpu — 每一行 GPU 代码都被真实验证过
+  </text>
+</svg>

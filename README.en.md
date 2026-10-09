@@ -18,6 +18,18 @@
   <img src="https://img.shields.io/badge/Ops-30%2B-ff7ac3" alt="ops">
 </p>
 
+<p align="center">
+  <b>English</b> · <a href="README.md">中文</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/docs/">📖 Docs</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/demo/">🚀 Live demo</a>
+</p>
+
+<p align="center">
+  <b>⭐ If moxwebgpu is useful to you, please give it a <a href="https://github.com/codecloud-dev/moxwebgpu">star</a> — it helps more people run GPU compute in the browser!</b>
+</p>
+
+<p align="center">
+  <img src="assets/demo.svg" width="760" alt="moxwebgpu — browser GPU training animation: data flows into the GPU and the loss curve keeps dropping">
+</p>
+
 
 ---
 

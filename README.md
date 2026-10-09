@@ -23,6 +23,14 @@
   <b>中文</b> · <a href="README.en.md">English</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/docs/">📖 文档站(中/EN 一键切换)</a> · <a href="https://codecloud-dev.github.io/moxwebgpu/demo/">🚀 在线演示</a>
 </p>
 
+<p align="center">
+  <b>⭐ 如果 moxwebgpu 对你有用,欢迎点个 <a href="https://github.com/codecloud-dev/moxwebgpu">Star</a> —— 它能让更多人在浏览器里跑起 GPU 计算!</b>
+</p>
+
+<p align="center">
+  <img src="assets/demo.svg" width="760" alt="moxwebgpu 浏览器 GPU 训练动图:数据流入 GPU、损失曲线持续下降">
+</p>
+
 > **同一份源码,浏览器运行、Node 构建与测试。** 没有独立显卡的机器上,用 Chrome 自带的 SwiftShader 软件渲染也能把 27 个真实 WebGPU 端到端测试全部跑绿——这是 moxwebgpu 与大多数「纸面 WebGPU 项目」最大的不同:**它的每一行 GPU 代码都被真实验证过**。
 
 <details>
