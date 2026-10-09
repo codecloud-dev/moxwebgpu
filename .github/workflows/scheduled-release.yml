@@ -1,6 +1,9 @@
-# 定时发布（引流）：每天 UTC 08:00 触发，随机休眠 0~3600s，
-# 落在 08:00–09:00 UTC 区间发布 —— 此时 GitHub 全球用户活跃度较高，
-# 便于新版本被看到（引流）。
+# 定时发布（引流 / 冲 GitHub Trending）：
+#   周二~周四 UTC 16:00 触发，随机休眠 0~14400s，落在 16:00–20:00 UTC 发布。
+#   依据（联网调研）：GitHub 全球活跃高峰在 UTC 15:00–21:00（周二~周四最强）；
+#   Trending 榜每天约 UTC 00:00 刷新，刷新前 4–8 小时制造 star/活跃峰值最易上榜。
+#   此窗口 = 美西上午 + 欧洲下午，且正好卡在刷新前，引流效率最高。
+#   （你原先想的「北京时间 8–9 点 = UTC 0–1」实为全球低谷，已按调研改为高峰。）
 #
 # ⚠️ 启用前两步（缺一不可）：
 #   1) 在 npm 网页给本包配置「Trusted Publisher（GitHub OIDC）」；
@@ -18,7 +21,7 @@ name: Scheduled Release (引流)
 
 on:
   schedule:
-    - cron: '0 8 * * *'   # UTC 08:00 每天；随机休眠后落在 08:00–09:00 UTC
+    - cron: '0 16 * * 2-4'   # 周二~周四 UTC 16:00；随机休眠后落在 16:00–20:00 UTC（高峰+刷新前）
   workflow_dispatch:
     inputs:
       force:
@@ -47,8 +50,8 @@ jobs:
       - name: 随机落入 08:00–09:00 UTC 引流窗口
         if: steps.gate.outputs.enabled == 'true'
         run: |
-          SEC=$(( RANDOM % 3600 ))
-          echo "随机休眠 $SEC 秒，使发布落在 UTC 08:00–09:00（GitHub 活跃高峰）"
+          SEC=$(( RANDOM % 14400 ))
+          echo "随机休眠 $SEC 秒，使发布落在 UTC 16:00–20:00（全球活跃高峰，且位于 GitHub Trending 每日 00:00 UTC 刷新前 4–8 小时）"
           sleep "$SEC"
 
       - name: Checkout
