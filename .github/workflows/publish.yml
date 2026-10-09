@@ -14,6 +14,9 @@
 
 name: Publish to npm (OIDC)
 
+# 临时关闭发包：用户暂不打算发布到 pnpm/npm 包仓库（2026-10-09）
+enabled: false
+
 on:
   push:
     tags:
