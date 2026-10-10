@@ -403,8 +403,11 @@ If it is useful in your work, you can also support development:
 
 - Afdian: https://afdian.com/a/cloudharbor
 
+
+<p align="center"><img src="assets/afdian-qr.jpg" width="200" alt="Afdian sponsorship QR code"></p>
+
 Stars, shares, or telling me where you use it are the best support. See [FUNDING.yml](FUNDING.yml) for the channels.
 
 ## 📜 License
 
-[MIT](LICENSE) © Codecloud. Designed by **Codecloud**; code co-written with AI, human-reviewed.
+[MIT](LICENSE) © codecloud-dev. Designed by **codecloud-dev**; code co-written with AI, human-reviewed.
