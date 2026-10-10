@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: "💬 想聊 / 想赞助 / Just want to chat"
+    url: "https://afdian.com/a/cloudharbor"
+    about: "吐槽、赞助、或者只是打个招呼都行。"
+  - name: "🔍 先搜搜有没有重复 / Search first"
+    url: "https://github.com/codecloud-dev/moxwebgpu/issues"
+    about: "提交前可以先看看有没有重复的 issue。"

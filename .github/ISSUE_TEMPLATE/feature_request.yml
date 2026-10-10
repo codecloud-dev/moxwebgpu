@@ -1,0 +1,33 @@
+name: "💡 功能建议 / Feature request"
+description: "想要个什么能力？说出来我看看。"
+title: "[Feature] "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        好主意！说说你想要什么、为什么想要。
+  - type: textarea
+    id: problem
+    attributes:
+      label: "想解决什么问题 / Problem"
+      placeholder: "现在什么让你不方便？"
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: "你期望的样子 / Your idea"
+      placeholder: "你希望它怎么做？"
+    validations:
+      required: false
+  - type: dropdown
+    id: priority
+    attributes:
+      label: "对你有多重要 / How important"
+      options:
+        - "没它不行 / Must-have"
+        - "有就更好 / Nice-to-have"
+        - "随便想想 / Just dreaming"
+    validations:
+      required: false

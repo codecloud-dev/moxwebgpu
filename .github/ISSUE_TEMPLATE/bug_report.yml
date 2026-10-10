@@ -1,0 +1,44 @@
+name: "🐛 Bug 报告 / Bug report"
+description: "踩到坑了？把现场告诉我，我来修。"
+title: "[Bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢来“批斗”我 😄 填得越详细，我修得越快。
+  - type: textarea
+    id: what
+    attributes:
+      label: "你遇到了什么 / What happened"
+      description: "现象描述，比如“点开就闪退”"
+      placeholder: "简短描述你看到的问题"
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: "怎么复现 / Steps to reproduce"
+      placeholder: |
+        1. 打开 …
+        2. 点击 …
+        3. 看到 …
+    validations:
+      required: false
+  - type: textarea
+    id: env
+    attributes:
+      label: "环境 / Environment"
+      placeholder: "系统 / 版本 / 浏览器 / 手机型号 / Termux 版本 …"
+    validations:
+      required: false
+  - type: dropdown
+    id: severity
+    attributes:
+      label: "严重程度 / Severity"
+      options:
+        - "崩了，完全用不了 / Broken"
+        - "能用但很难受 / Annoying"
+        - "小毛病 / Minor"
+    validations:
+      required: false

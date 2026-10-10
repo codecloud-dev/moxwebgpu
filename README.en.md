@@ -24,6 +24,19 @@
 
 <p align="center">
   <b>⭐ If moxwebgpu is useful to you, please give it a <a href="https://github.com/codecloud-dev/moxwebgpu">star</a> — it helps more people run GPU compute in the browser!</b>
+
+
+
+## 🐛 Welcome to roast me
+
+> This is an early-stage project — **bugs exist, and probably plenty of them.** I'm not pretending it's perfect.
+> Every pitfall you hit and every gripe you have is a chance to help make it better.
+
+- 💥 Crashed / black screen / won't run? → [File a bug report](https://github.com/codecloud-dev/moxwebgpu/issues)
+- 💡 Want a feature? → [Open a feature request](https://github.com/codecloud-dev/moxwebgpu/issues)
+- 🗯️ Just want to rant or nitpick? → Issues are welcome too, label it whatever 😄
+
+I read every issue and fix what I can, fast. Let's grow this from "runs" to "delightful" 💪
 </p>
 
 <p align="center">

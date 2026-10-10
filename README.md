@@ -25,6 +25,19 @@
 
 <p align="center">
   <b>⭐ 如果 moxwebgpu 对你有用,欢迎点个 <a href="https://github.com/codecloud-dev/moxwebgpu">Star</a> —— 它能让更多人在浏览器里跑起 GPU 计算!</b>
+
+
+
+## 🐛 欢迎来“批斗”我
+
+> 这是个刚起步的项目，**bug 肯定有，而且不少**。我不装完美——
+> 你踩到的每一个坑、每一个槽点，都是帮我把它养好的机会。
+
+- 💥 遇到崩溃 / 黑屏 / 跑不起来？→ [提个 Bug 报告](https://github.com/codecloud-dev/moxwebgpu/issues)
+- 💡 有想要的功能？→ [开个需求](https://github.com/codecloud-dev/moxwebgpu/issues)
+- 🗯️ 单纯想吐槽、挑刺？→ 也欢迎开 issue，标签随便打 😄
+
+每个 issue 我都会看，能修的尽快修。一起把它从“能跑”养到“好用” 💪
 </p>
 
 <p align="center">
