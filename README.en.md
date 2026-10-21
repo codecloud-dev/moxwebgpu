@@ -1,3 +1,5 @@
+> **🌐 Canonical repository is on GitHub** — [`codecloud-dev/moxwebgpu`](https://github.com/codecloud-dev/moxwebgpu) is the single source of truth: please file all issues and pull requests there. The [Gitee mirror](https://gitee.com/thousand-code-crafts/moxwebgpu) is a read-only copy synced hourly for faster access in mainland China.
+
 <p align="center">
   <img src="assets/logo.svg" width="128" alt="moxwebgpu liquid glass logo">
 </p>
