@@ -26,6 +26,13 @@ export class MoxContext {
   readonly pool: BufferPool;
   readonly pipelines: PipelineCache;
   readonly scheduler: Scheduler;
+  /**
+   * Rejects with a descriptive error once the GPU device is lost. Pending
+   * GPU reads race against this so a lost device (GPU reset / driver crash)
+   * fails fast instead of leaving `mapAsync()` — and the caller — hanging
+   * forever.
+   */
+  readonly deviceLost: Promise<never>;
 
   private constructor(adapter: GPUAdapter, device: GPUDevice) {
     this.adapter = adapter;
@@ -34,6 +41,15 @@ export class MoxContext {
     this.pool = new BufferPool(device);
     this.pipelines = new PipelineCache(device);
     this.scheduler = new Scheduler(this);
+    this.deviceLost = new Promise<never>((_resolve, reject) => {
+      device.lost.then((info) => {
+        const detail = info.message ? `: ${info.message}` : '';
+        reject(new Error(`moxwebgpu: GPU device lost (${info.reason})${detail}`));
+      });
+    });
+    // Attach a no-op handler so the rejection never surfaces as an unhandled
+    // rejection while no GPU read is in flight.
+    this.deviceLost.catch(() => {});
   }
 
   /** Request an adapter + device and build the context. */

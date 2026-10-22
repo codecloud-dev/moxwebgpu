@@ -12,9 +12,17 @@ import {
   encodeCopyUniform,
   contiguousStrides,
 } from '../codegen.js';
+import { normAxis } from './reduce.js';
 
 const COPY_WG = 64;
 const TILE = 16;
+
+/** The generic copy kernel decodes at most 4 dimensions (vec4 uniform). */
+function assertCopyRank(rank: number, op: string): void {
+  if (rank > 4) {
+    throw new Error(`moxwebgpu: ${op} supports up to 4D tensors (generic copy kernel limit), got rank ${rank}`);
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /* Transpose (2D)                                                      */
@@ -54,7 +62,10 @@ export interface SliceAttrs {
 
 export const sliceDef: OpDef = {
   name: 'slice',
-  outShape: (_shapes, attrs) => attrs.size as number[],
+  outShape: (_shapes, attrs) => {
+    assertCopyRank(_shapes[0].length, 'slice');
+    return attrs.size as number[];
+  },
   build: (shapes, dtypes, attrs) => {
     const dtype: DType = dtypes[0];
     const { start, size } = attrs as SliceAttrs;
@@ -82,10 +93,13 @@ export const concatDef: OpDef = {
   outShape: (shapes, attrs) => {
     const a = shapes[0];
     const b = shapes[1];
+    assertCopyRank(a.length, 'concat');
     if (a.length !== b.length) {
       throw new Error(`moxwebgpu: concat requires matching ranks, got ${a.length} vs ${b.length}`);
     }
-    const axis = attrs.axis as number;
+    // Negative axes count from the end (numpy-style); an unnormalized axis
+    // would index `undefined` and poison the shape with NaN.
+    const axis = normAxis(attrs.axis as number, a.length);
     for (let d = 0; d < a.length; d++) {
       if (d !== axis && a[d] !== b[d]) {
         throw new Error(`moxwebgpu: concat shape mismatch on non-axis dim ${d}: ${a[d]} vs ${b[d]}`);
@@ -97,7 +111,7 @@ export const concatDef: OpDef = {
   },
   build: (shapes, dtypes, attrs) => {
     const dtype: DType = dtypes[0];
-    const axis = attrs.axis as number;
+    const axis = normAxis(attrs.axis as number, shapes[0].length);
     const outShape = this_outShape(shapes, axis);
     const globalStrides = contiguousStrides(outShape);
 

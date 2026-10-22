@@ -12,6 +12,18 @@ import { createNode, topoSort, type OpDef } from '../../src/graph/lazy.js';
 import { matmulDef } from '../../src/tensor/ops/matmul.js';
 import { concatDef } from '../../src/tensor/ops/shape.js';
 import { axisReduceOpDef, normAxis } from '../../src/tensor/ops/reduce.js';
+import { softmaxDef } from '../../src/tensor/ops/nn.js';
+import { Tensor } from '../../src/tensor/tensor.js';
+import { installTensorOps } from '../../src/tensor/ops/index.js';
+
+// Install the chainable op surface (clamp/concat/slice/...) — same call the
+// library entry point makes. No GPU is touched: ops only build lazy nodes.
+installTensorOps(Tensor.prototype);
+
+const noGpuCtx: any = {};
+function lazyLeaf(shape: number[], dtype: any = 'f32'): Tensor {
+  return new Tensor(noGpuCtx, shape, dtype, null, null);
+}
 
 describe('broadcastMode', () => {
   it('plain when shapes match', () => {
@@ -118,8 +130,41 @@ describe('lazy graph', () => {
     expect(n.kind).toBe('node');
   });
 
+  it('createNode records construction-time input shapes (reshape views)', () => {
+    // Regression: the scheduler used to rebuild op plans from the *source
+    // nodes'* shapes, so a reshape view of a node-backed tensor lost its
+    // view shape at execution (e.g. matmul saw k=undefined and dispatched a
+    // zero-iteration loop, silently returning zeros). Plans must be built
+    // from the recorded view shapes.
+    const seen: number[][][] = [];
+    const spyOp: OpDef = {
+      name: 'spy',
+      outShape: (s) => s[0],
+      build: (shapes) => {
+        seen.push(shapes.map((x) => x.slice()));
+        return { steps: [] };
+      },
+    };
+    const a = leaf([6], 'a');
+    const n1 = createNode(spyOp, [a]);
+    const view = { ctx: {}, shape: [2, 3], dtype: 'f32', node: n1, data: null } as any;
+    const n2 = createNode(spyOp, [view]);
+    expect(n2.inputShapes).toEqual([[2, 3]]);
+    spyOp.build(n2.inputShapes!, [], {});
+    expect(seen[seen.length - 1]).toEqual([[2, 3]]);
+  });
+
   it('matmulDef rejects mismatched inner dims', () => {
     expect(() => matmulDef.outShape!([[2, 3], [4, 5]], {})).toThrow();
+  });
+
+  it('matmulDef supports a 1-D right operand ([M,K] @ [K] -> [M])', () => {
+    // Regression: a 1-D right operand used to produce a shape containing
+    // `undefined` (NaN element count) instead of a vector result.
+    const a = leaf([2, 3], 'a');
+    const n = createNode(matmulDef, [a, leaf([3], 'b')] as any);
+    expect(n.shape).toEqual([2]);
+    expect(() => createNode(matmulDef, [leaf([3], 'a'), leaf([3], 'b')] as any)).toThrow(/2-D/);
   });
 
   it('concatDef outShape sums the axis', () => {
@@ -162,5 +207,68 @@ describe('axisReduceOpDef (generic any-axis)', () => {
     expect(normAxis(-4, 3)).toBe(2);
     expect(normAxis(3, 3)).toBe(0);
     expect(normAxis(1.7, 3)).toBe(1);
+  });
+});
+
+describe('op-surface regressions (graph build only, no GPU)', () => {
+  it('clamp builds max(min(x, hi), lo) with scalar ops', () => {
+    // Regression: clamp used to apply the *binary* maxDef with a single
+    // input, crashing in broadcastMode with "Cannot read properties of
+    // undefined (reading 'length')".
+    const c = lazyLeaf([4]).clamp(0, 1);
+    expect(c.shape).toEqual([4]);
+    expect(c.node).not.toBeNull();
+  });
+
+  it('concat normalizes negative axes instead of writing NaN dims', () => {
+    const c = (lazyLeaf([2, 3]) as any).concat(lazyLeaf([2, 3]), -1);
+    expect(c.shape).toEqual([2, 6]);
+  });
+
+  it('concatDef outShape normalizes negative axes', () => {
+    expect(concatDef.outShape!([[2, 3], [2, 3]], { axis: -1 })).toEqual([2, 6]);
+    expect(concatDef.outShape!([[2, 3], [2, 3]], { axis: -2 })).toEqual([4, 3]);
+  });
+
+  it('slice beyond 4D throws (copy kernel limit) instead of mis-copying', () => {
+    expect(() =>
+      (lazyLeaf([2, 2, 2, 2, 2]) as any).slice([0, 0, 0, 0, 0], [1, 1, 1, 1, 2]),
+    ).toThrow(/4D/);
+  });
+
+  it('softmax build rejects non-f32 (shader would not compile)', () => {
+    expect(() => softmaxDef.build([[2, 3]], ['i32' as any], {})).toThrow(/f32/);
+    expect(() => softmaxDef.build([[2, 3]], ['f32'], {})).not.toThrow();
+  });
+});
+
+describe('topoSort skips materialized subtrees', () => {
+  const fakeOp: OpDef = {
+    name: 'fake',
+    outShape: (s) => s[0],
+    build: () => ({ steps: [] }),
+  };
+
+  it('does not count input edges of already-executed parents', () => {
+    const a = { shape: [2], dtype: 'f32', node: null, ctx: {} } as any;
+    const ab = createNode(fakeOp, [a]);
+    const abTensor = { ctx: {}, shape: [2], dtype: 'f32', node: ab, data: null } as any;
+    const abc = createNode(fakeOp, [abTensor]);
+
+    // First pass: both nodes run; ab's buffer is recycled afterwards.
+    expect(topoSort(abc)).toEqual([ab, abc]);
+    expect(ab.consumers).toBe(1);
+    ab.buffer = null;
+    ab.consumers = 0;
+    abc.buffer = { marker: 'abc' } as any; // abc stays materialized
+
+    // A new consumer of the materialized abc must not descend into its
+    // subtree: that would phantom-count ab's edges (buffer never released)
+    // and needlessly recompute ab.
+    const abcTensor = { ctx: {}, shape: [2], dtype: 'f32', node: abc, data: null } as any;
+    const abc2 = createNode(fakeOp, [abcTensor]);
+    expect(topoSort(abc2)).toEqual([abc2]);
+    expect(abc.consumers).toBe(1);
+    expect(ab.consumers).toBe(0);
   });
 });

@@ -89,6 +89,13 @@ export interface LazyNode {
   op: OpDef;
   attrs: any;
   inputs: NodeInput[];
+  /**
+   * Shapes of `inputs` as seen when this node was created. A reshape view
+   * of a node-backed tensor has its own shape that can differ from the
+   * source node's shape — the scheduler must build the op plan from these
+   * recorded view shapes, not from the source nodes' shapes.
+   */
+  inputShapes?: number[][];
   shape: number[];
   dtype: DType;
   /** Filled by the scheduler after execution. */
@@ -108,6 +115,7 @@ export function createNode(op: OpDef, inputs: any[], attrs: any = {}): LazyNode 
     attrs,
     // Lazy inputs reference their node; leaf tensors (node == null) wrap as leaves.
     inputs: inputs.map((t) => (t.node ? t.node : { kind: 'leaf', tensor: t })),
+    inputShapes: shapes,
     shape,
     dtype,
     buffer: null,
@@ -122,6 +130,12 @@ export function topoSort(root: LazyNode): LazyNode[] {
   const walk = (n: LazyNode): void => {
     if (visited.has(n)) return;
     visited.add(n);
+    // Already-materialized nodes are not re-executed by the scheduler, so
+    // their input edges must not be counted here: the scheduler releases a
+    // buffer when its consumer count hits zero, and an uncounted edge would
+    // leave that count permanently positive (buffer never recycled) — plus
+    // force a pointless recompute of the cached subtree.
+    if (n.buffer) return;
     for (const input of n.inputs) {
       if (input.kind !== 'leaf') {
         input.consumers++;

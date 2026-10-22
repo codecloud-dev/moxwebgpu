@@ -39,22 +39,33 @@ function onesLike(t: Tensor): Tensor {
 /**
  * Reduce `t` to `shape` by summing out broadcasted / leading dimensions.
  * Used to push a gradient back to a smaller broadcast operand's shape.
+ *
+ * Rank reduction direction matters: a row-broadcast operand's grad must sum
+ * the *leading* axes ([M,K] -> [K]), a column-broadcast operand's grad must
+ * sum the *trailing* axes ([M,K] -> [M]). The leading dim decides: if it
+ * already matches the target, the extra axes are trailing, else leading.
  */
 export function sumTo(t: Tensor, shape: number[]): Tensor {
   let cur = t;
-  let curShape = cur.shape;
-  while (curShape.length > shape.length) {
-    cur = cur.sum(0);
-    curShape = cur.shape;
+  if (shape.length === 0) {
+    // Scalar target (0-dim leaf): fold every axis out, then view as 0-dim.
+    // (sum() bottoms out at rank 1, never 0, so reshape does the last step.)
+    while (cur.shape.length > 1) cur = cur.sum(0);
+    return cur.reshape();
   }
+  while (cur.shape.length > shape.length) {
+    const dropLast = shape.length > 0 && cur.shape[0] === shape[0];
+    cur = dropLast ? cur.sum(cur.shape.length - 1) : cur.sum(0);
+  }
+  // Walk from the last axis so summing one axis never shifts the indices
+  // of the axes still to be checked.
   const outShape: number[] = [];
-  for (let d = 0; d < shape.length; d++) {
-    if (curShape[d] !== shape[d]) {
+  for (let d = shape.length - 1; d >= 0; d--) {
+    if (cur.shape[d] !== shape[d]) {
       cur = cur.sum(d);
-      curShape = cur.shape;
-      outShape.push(1);
+      outShape.unshift(1);
     } else {
-      outShape.push(curShape[d]);
+      outShape.unshift(shape[d]);
     }
   }
   return cur.reshape(...outShape);

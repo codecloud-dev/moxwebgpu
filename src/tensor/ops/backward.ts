@@ -69,15 +69,32 @@ export function installBackward(): void {
   };
 
   // ---- matmul ----
-  matmulDef.backward = (inputs, _o, g) => {
+  matmulDef.backward = (inputs, o, g) => {
     const [a, b] = inputs;
+    if (b.ndim === 1) {
+      // W[M,K] @ x[K] -> out [M]: dL/dW = g ⊗ x (outer product), dL/dx = W^T g.
+      // Built from 2-D matmuls via zero-copy reshapes (transpose is 2-D only).
+      const m = o.shape[0];
+      const gCol = g.reshape(m, 1);
+      return [
+        gCol.matmul(b.reshape(1, b.shape[0])),
+        a.transpose().matmul(gCol).reshape(...b.shape),
+      ];
+    }
     return [g.matmul(b.transpose()), a.transpose().matmul(g)];
   };
 
   // ---- softmax (numerically stable, over the last axis) ----
+  // dx = y * (g - sum(g*y, last axis)): the correction term must be the
+  // per-row sum, NOT an elementwise product (sumTo with the full shape is
+  // a no-op and silently yields a wrong gradient).
   softmaxDef.backward = (inputs, o, g) => {
     const y = o;
-    const s = sumTo(g.mul(y), y.shape);
+    const rowShape = y.ndim >= 2 ? y.shape.slice(0, -1) : [1];
+    let s = sumTo(g.mul(y), rowShape);
+    // A single-row (or 1-D) softmax has a scalar correction term; replicate
+    // it so the subtraction is a plain elementwise op.
+    if (s.size === 1) s = s.expand(y.shape);
     return [g.sub(s).mul(y)];
   };
 }
