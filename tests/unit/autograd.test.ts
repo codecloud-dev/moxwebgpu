@@ -73,6 +73,23 @@ describe('autograd (shape-level, no GPU)', () => {
     expect(a.grad!.shape).toEqual([3, 4]);
   });
 
+  it('softmax backward builds for 1-D input (scalar correction term)', () => {
+    const a = leaf([5]);
+    a.softmax().sum().backward();
+    expect(a.grad!.shape).toEqual([5]);
+  });
+
+  it('col-broadcast backward reduces trailing axes', () => {
+    // Regression: sumTo used to only drop leading axes, so a column-broadcast
+    // operand ([M] against [M,K]) got a [1]-shaped gradient instead of [M].
+    const a = leaf([4, 5]);
+    const b = leaf([4]);
+    const loss = a.mul(b).sum();
+    loss.backward();
+    expect(a.grad!.shape).toEqual([4, 5]);
+    expect(b.grad!.shape).toEqual([4]);
+  });
+
   it('gradient only computed for requiresGrad leaves', () => {
     const a = leaf([2], false);
     const b = leaf([2]);

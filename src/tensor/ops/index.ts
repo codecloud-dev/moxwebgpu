@@ -96,7 +96,9 @@ export function installTensorOps(proto: object): void {
   p.div = binaryMethod(divDef, divScalarDef);
   p.pow = binaryMethod(powDef, powScalarDef);
   p.clamp = function (this: Tensor, lo: number, hi: number): Tensor {
-    return this.apply(maxDef, [this.apply(minScalarDef, [this], { scalar: hi })], { scalar: lo });
+    // clamp(x, lo, hi) = max(min(x, hi), lo). Both steps are scalar ops —
+    // maxDef is the *binary* def and would read a missing second input shape.
+    return this.apply(maxScalarDef, [this.apply(minScalarDef, [this], { scalar: hi })], { scalar: lo });
   };
 
   /* ---- reversed scalar ops: 2.sub(x) etc. ---- */

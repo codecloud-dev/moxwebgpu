@@ -11,6 +11,12 @@ export const softmaxDef: OpDef = {
   outShape: (shapes) => shapes[0],
   build: (shapes, dtypes) => {
     const dtype: DType = dtypes[0];
+    // The shader seeds the row max from the f32 `identity` uniform slot and
+    // accumulates in f32 — integer dtypes would produce a WGSL type error
+    // (silent no-op dispatch). Same contract as mean: cast first.
+    if (dtype !== 'f32') {
+      throw new Error('moxwebgpu: softmax requires f32 input (cast first: t.toFloat())');
+    }
     const shape = shapes[0];
     const rows = shape.length <= 1 ? 1 : numElements(shape) / shape[shape.length - 1];
     const cols = shape[shape.length - 1];

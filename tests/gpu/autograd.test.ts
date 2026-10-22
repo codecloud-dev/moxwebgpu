@@ -31,7 +31,11 @@ describe('autograd (numerical, GPU/SwiftShader)', () => {
       return { analytic, numeric };
     });
     for (let i = 0; i < analytic.length; i++) {
-      expect(analytic[i]).toBeCloseTo(numeric[i], 3);
+      // 2 digits, not 3: the *numeric* side is a central finite difference
+      // evaluated in f32, which carries ~1e-3 absolute noise at these
+      // magnitudes (the analytic value is exact). Same tolerance the
+      // matmul finite-difference test below uses.
+      expect(analytic[i]).toBeCloseTo(numeric[i], 2);
     }
   });
 

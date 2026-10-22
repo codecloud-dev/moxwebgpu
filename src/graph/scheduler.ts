@@ -12,7 +12,7 @@
 import type { MoxContext } from '../core/context.js';
 import type { GpuDataBuffer } from '../core/buffer.js';
 import type { Tensor } from '../tensor/tensor.js';
-import { numElements, makeTypedArray, DTYPES, type DType } from '../core/dtype.js';
+import { numElements, makeTypedArray, DTYPES } from '../core/dtype.js';
 import type { LazyNode, BindingSpec } from './lazy.js';
 import { topoSort } from './lazy.js';
 
@@ -44,26 +44,24 @@ export class Scheduler {
     const { device, queue } = this.ctx;
 
     // Resolve input buffers (materializing leaf tensors on first use).
-    // Shapes/dtypes follow the original input order — lazy nodes included.
-    const inputTensors: Tensor[] = [];
     const inputBuffers: GpuDataBuffer[] = [];
     const nodeInputs: LazyNode[] = [];
-    const inputShapes: number[][] = [];
-    const inputDtypes: DType[] = [];
     for (const input of n.inputs) {
       if (input.kind === 'leaf') {
-        const t = input.tensor as Tensor;
-        inputTensors.push(t);
-        inputBuffers.push(this.ctx.scheduler.materialize(t));
-        inputShapes.push(t.shape);
-        inputDtypes.push(t.dtype);
+        inputBuffers.push(this.ctx.scheduler.materialize(input.tensor as Tensor));
       } else {
         nodeInputs.push(input);
         inputBuffers.push(input.buffer!);
-        inputShapes.push(input.shape);
-        inputDtypes.push(input.dtype);
       }
     }
+    // Shapes/dtypes as recorded at graph-construction time: a reshape view
+    // of a node-backed tensor carries its own shape, and the op plan must
+    // be built from the view's shape (the source node's shape can differ —
+    // e.g. matmul would see k=undefined and dispatch a zero-iteration loop).
+    const inputShapes =
+      n.inputShapes ??
+      n.inputs.map((i) => (i.kind === 'leaf' ? (i.tensor as Tensor).shape : i.shape));
+    const inputDtypes = n.inputs.map((i) => (i.kind === 'leaf' ? (i.tensor as Tensor).dtype : i.dtype));
     const plan = n.op.build(inputShapes, inputDtypes, n.attrs);
 
     const output = this.ctx.pool.acquire(Math.max(1, numElements(n.shape)), n.dtype);
@@ -153,6 +151,7 @@ export class Scheduler {
   /** Copy a GPU buffer back to the CPU as a typed array. */
   async readback(buf: GpuDataBuffer): Promise<Float32Array | Int32Array | Uint32Array> {
     const { device, queue } = this.ctx;
+    if (buf.elements === 0) return makeTypedArray(buf.dtype, 0);
     const bytes = buf.buffer.size;
     const staging = device.createBuffer({
       size: bytes,
@@ -162,7 +161,13 @@ export class Scheduler {
     const encoder = device.createCommandEncoder();
     encoder.copyBufferToBuffer(buf.buffer, 0, staging, 0, bytes);
     queue.submit([encoder.finish()]);
-    await staging.mapAsync(GPUMapMode.READ);
+    try {
+      // Race the device-lost promise: on device loss mapAsync never settles.
+      await Promise.race([staging.mapAsync(GPUMapMode.READ), this.ctx.deviceLost]);
+    } catch (err) {
+      staging.destroy();
+      throw err;
+    }
     const Ctor = DTYPES[buf.dtype].array as any;
     const raw = new Uint8Array(staging.getMappedRange());
     const out = makeTypedArray(buf.dtype, buf.elements);

@@ -80,8 +80,6 @@ export class Kernel {
     } else {
       throw new Error('moxwebgpu: kernel.run() needs either `elements` or `workgroups`');
     }
-    this.dispatch(buffers, wg);
-
     const outIndex = this.options.output ?? buffers.length - 1;
     const outBuf = buffers[outIndex];
     if (!outBuf) throw new Error(`moxwebgpu: no buffer at binding ${outIndex} to read back`);
@@ -98,13 +96,22 @@ export class Kernel {
       Math.floor(gpuBuf.size / DTYPES[dtype].bytes);
     const bytes = Math.min(gpuBuf.size, logical * DTYPES[dtype].bytes);
     const elements = Math.floor(bytes / DTYPES[dtype].bytes);
+    if (elements === 0) return makeTypedArray(dtype, 0);
+
+    this.dispatch(buffers, wg);
 
     const { device, queue } = this.ctx;
     const staging = device.createBuffer({ size: bytes, usage: STAGING_USAGE, label: 'moxwebgpu-kernel-staging' });
     const encoder = device.createCommandEncoder();
     encoder.copyBufferToBuffer(gpuBuf, 0, staging, 0, bytes);
     queue.submit([encoder.finish()]);
-    await staging.mapAsync(GPUMapMode.READ);
+    try {
+      // Race the device-lost promise: on device loss mapAsync never settles.
+      await Promise.race([staging.mapAsync(GPUMapMode.READ), this.ctx.deviceLost]);
+    } catch (err) {
+      staging.destroy();
+      throw err;
+    }
     const Ctor = DTYPES[dtype].array as any;
     const mapped = new Uint8Array(staging.getMappedRange());
     const out = makeTypedArray(dtype, elements);
