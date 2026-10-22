@@ -1,4 +1,4 @@
-> **🌐 主仓库在 GitHub** — [`codecloud-dev/moxwebgpu`](https://github.com/codecloud-dev/moxwebgpu) 是唯一主源：Issue、Pull Request、功能讨论请统一提交到 GitHub。[Gitee 镜像](https://gitee.com/thousand-code-crafts/moxwebgpu) 仅供国内高速只读访问，每小时从 GitHub 自动同步。
+> **🌐 主仓库在 GitHub** — [`codecloud-dev/moxwebgpu`](https://mox-site.pages.dev/go.html?r=moxwebgpu) 是唯一主源：Issue、Pull Request、功能讨论请统一提交到 GitHub。[Gitee 镜像](https://gitee.com/thousand-code-crafts/moxwebgpu) 仅供国内高速只读访问，每小时从 GitHub 自动同步。
 
 <p align="center">  
   <img src="assets/logo.svg" width="128" alt="moxwebgpu 液态玻璃标志">  
@@ -26,7 +26,7 @@
 </p>
 
 <p align="center">
-  <b>⭐ 如果 moxwebgpu 对你有用,欢迎点个 <a href="https://github.com/codecloud-dev/moxwebgpu">Star</a> —— 它能让更多人在浏览器里跑起 GPU 计算!</b>
+  <b>⭐ 如果 moxwebgpu 对你有用,欢迎点个 <a href="https://mox-site.pages.dev/go.html?r=moxwebgpu">Star</a> —— 它能让更多人在浏览器里跑起 GPU 计算!</b>
 
 
 
@@ -35,8 +35,8 @@
 > 这是个刚起步的项目，**bug 肯定有，而且不少**。我不装完美——
 > 你踩到的每一个坑、每一个槽点，都是帮我把它养好的机会。
 
-- 💥 遇到崩溃 / 黑屏 / 跑不起来？→ [提个 Bug 报告](https://github.com/codecloud-dev/moxwebgpu/issues)
-- 💡 有想要的功能？→ [开个需求](https://github.com/codecloud-dev/moxwebgpu/issues)
+- 💥 遇到崩溃 / 黑屏 / 跑不起来？→ [提个 Bug 报告](https://mox-site.pages.dev/go.html?r=moxwebgpu&p=issues)
+- 💡 有想要的功能？→ [开个需求](https://mox-site.pages.dev/go.html?r=moxwebgpu&p=issues)
 - 🗯️ 单纯想吐槽、挑刺？→ 也欢迎开 issue，标签随便打 😄
 
 每个 issue 我都会看，能修的尽快修。一起把它从“能跑”养到“好用” 💪
@@ -785,7 +785,7 @@ A:遵循 WGSL 语义(按位回绕)。归约 identity、编码器、读回视图�
 
 ## 🤝 参与进来
 
-发现 bug 或想要新算子,欢迎提 [Issue](https://github.com/codecloud-dev/moxwebgpu/issues);想贡献代码直接提 Pull Request——WGSL 算子照着[五步指南](#如何添加一个新算子五步)加一个 `OpDef` 即可,测试会告诉你对不对。
+发现 bug 或想要新算子,欢迎提 [Issue](https://mox-site.pages.dev/go.html?r=moxwebgpu&p=issues);想贡献代码直接提 Pull Request——WGSL 算子照着[五步指南](#如何添加一个新算子五步)加一个 `OpDef` 即可,测试会告诉你对不对。
 
 ---
 
