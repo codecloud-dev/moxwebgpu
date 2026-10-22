@@ -120,6 +120,6 @@
   (validation error = 静默 no-op)→ 严格分池 + `releaseUniform()`。
 - 每次执行泄漏 scratch UBO → submit 后统一归还池。
 
-[unreleased]: https://mox-site.pages.dev/go.html?r=moxwebgpu&p=compare/v0.2.0...HEAD
-[0.2.0]: https://mox-site.pages.dev/go.html?r=moxwebgpu&p=releases/tag/v0.2.0
-[0.1.0]: https://mox-site.pages.dev/go.html?r=moxwebgpu&p=releases/tag/v0.1.0
+[unreleased]: https://mox-site.pages.dev/go?r=moxwebgpu&p=compare/v0.2.0...HEAD
+[0.2.0]: https://mox-site.pages.dev/go?r=moxwebgpu&p=releases/tag/v0.2.0
+[0.1.0]: https://mox-site.pages.dev/go?r=moxwebgpu&p=releases/tag/v0.1.0
