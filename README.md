@@ -176,7 +176,7 @@ WebGPU 的 compute pipeline 能力极强,但裸用它做一次向量加法,你�
 
 ## 📦 安装
 
-> 🟡 **待发布到 npm（配置已就绪）**：`package.json` 已就位（`version: 1.0.1`，`prepublishOnly` 会自动构建），OIDC 免 token 发布流程已配好（见 `.github/workflows/publish.yml`）。等你绑定 npm 账号后执行一次 `npm publish` 即上线；此前可用下方「方式三：从源码构建」或在线 Demo。
+> 🟡 **待发布到 npm（配置已就绪，尚未实际上线）**：`package.json` 已就位（`version: 1.0.2`，`prepublishOnly` 会自动构建），OIDC 免 token 发布流程已配好（见 `.github/workflows/publish.yml`）。绑定 npm 账号后执行一次 `npm publish` 即上线——在此之前 `npm install moxwebgpu` **尚不可用**，请用下方「方式三：从源码构建」或在线 Demo。
 
 ### 🌐 方式一:浏览器 `<script>`(零构建)
 
@@ -190,7 +190,10 @@ WebGPU 的 compute pipeline 能力极强,但裸用它做一次向量加法,你�
 
 IIFE 产物暴露全局 `MoxWebGPU`,内含 `mox`、`MoxContext`、`Tensor`、`Kernel` 等全部导出。
 
-### 🔹 方式二:npm(Node / 打包器)
+### 🔹 方式二:npm(Node / 打包器)  _（包尚未发布，当前不可用）_
+
+> ⚠️ `moxwebgpu` 暂未发布到 npm  registry（见上方说明）。以下命令需在**正式发布后**才可用；
+> 现在请走方式三从源码构建。
 
 ```bash
 npm install moxwebgpu
