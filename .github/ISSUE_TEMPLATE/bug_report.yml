@@ -42,3 +42,4 @@ body:
         - "小毛病 / Minor"
     validations:
       required: false
+        **安全漏洞请不要在这里提**，改走 SECURITY.md 的私密渠道。
