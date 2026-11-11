@@ -1,0 +1,24 @@
+# CODEOWNERS · moxwebgpu
+#
+# 语法： <路径模式>  <GitHub 用户名或团队>
+# 作用： 匹配路径的 PR 会自动请求对应所有者审核；若开启「Require review from Code Owners」
+#        则这些行是强制的。本仓目前**未开启**强制审核，仅用于自动指派与责任标注。
+#
+# 现状：单人维护，全部路径归 @codecloud-dev。下面按领域分行，是为了新增维护者时
+#       可以逐行替换而不必重写整个文件；也方便贡献者一眼看出「改这块该找谁」。
+#       私有仓的路径标注同时作为内部责任划分依据。
+
+# ── 兜底：任何未被下面规则命中的文件 ──────────────────────────────
+*                                              @codecloud-dev
+
+# ── 分域审核（越靠下的规则优先级越高）────────────────────────────
+src/backends/webgpu/                           @codecloud-dev   # WebGPU 后端与 WGSL shader（安全敏感）
+src/tensor/                                    @codecloud-dev   # 张量与算子
+src/graph/                                     @codecloud-dev   # 自动微分图
+src/nn/                                        @codecloud-dev   # 层与模块
+.github/workflows/                             @codecloud-dev   # CI / Pages / npm 发布
+
+# ── 社区与治理文件：改动前建议先开 Issue 讨论 ─────────────────────
+/SECURITY.md                                   @codecloud-dev   # 安全政策
+/CODE_OF_CONDUCT.md                            @codecloud-dev   # 行为准则
+/.github/CODEOWNERS                            @codecloud-dev   # 本文件
