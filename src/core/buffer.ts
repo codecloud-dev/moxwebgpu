@@ -71,9 +71,23 @@ export class GpuDataBuffer {
   }
 }
 
+/** Default ceiling for idle pooled buffers. Purely a memory budget, not a
+ *  correctness limit: buffers beyond the budget are destroyed on release. */
+export const DEFAULT_MAX_POOLED_BYTES = 64 * 1024 * 1024;
+
+export interface BufferPoolOptions {
+  /** Maximum total bytes kept idle in the pool. 0 disables pooling entirely. */
+  maxPooledBytes?: number;
+}
+
 /**
  * Size-bucketed buffer pool. Buffers are recycled by *byte size bucket*
  * (power-of-two buckets), so repeated dispatch shapes hit the cache.
+ *
+ * The pool is bounded by a byte budget: without one, a long-running session
+ * that allocates many distinct shapes would keep every returned buffer alive
+ * forever (each distinct bucket grows its own unbounded list) until the GPU
+ * process runs out of memory.
  */
 export class BufferPool {
   private device: GPUDevice;
@@ -82,11 +96,16 @@ export class BufferPool {
    *  which would be a validation error and a silent no-op dispatch. */
   private freeStorage = new Map<number, GPUBuffer[]>();
   private freeUniform = new Map<number, GPUBuffer[]>();
-  private liveCount = 0;
+  /** Buffers currently checked out (not sitting idle in the pool). */
+  private checkedOut = 0;
   private poolCount = 0;
+  private pooledBytes = 0;
+  private readonly maxPooledBytes: number;
 
-  constructor(device: GPUDevice) {
+  constructor(device: GPUDevice, options: BufferPoolOptions = {}) {
     this.device = device;
+    const cap = options.maxPooledBytes ?? DEFAULT_MAX_POOLED_BYTES;
+    this.maxPooledBytes = Number.isFinite(cap) ? Math.max(0, cap) : DEFAULT_MAX_POOLED_BYTES;
   }
 
   /** Acquire a storage buffer of at least `elements` elements of `dtype`. */
@@ -100,11 +119,13 @@ export class BufferPool {
         usage: STORAGE_USAGE,
         label: `moxwebgpu-pool-${bucket}`,
       });
-      this.liveCount++;
+      this.checkedOut++;
       return new GpuDataBuffer(buffer, elements, dtype);
     }
     const buffer = bucketList.pop()!;
     this.poolCount--;
+    this.pooledBytes -= buffer.size;
+    this.checkedOut++;
     return new GpuDataBuffer(buffer, elements, dtype);
   }
 
@@ -122,16 +143,26 @@ export class BufferPool {
         usage: UNIFORM_USAGE,
         label: `moxwebgpu-ubo-${bucket}`,
       });
-      this.liveCount++;
+      this.checkedOut++;
       return buffer;
     }
     const buffer = bucketList.pop()!;
     this.poolCount--;
+    this.pooledBytes -= buffer.size;
+    this.checkedOut++;
     return buffer;
   }
 
-  /** Return a raw buffer to the pool. Usage must be given to pick the right bucket family. */
+  /**
+   * Return a raw buffer. If the byte budget would be exceeded, destroy it
+   * instead of keeping it idle — `checkedOut` drops either way.
+   */
   releaseRaw(buffer: GPUBuffer, usage: 'storage' | 'uniform' = 'storage'): void {
+    this.checkedOut = Math.max(0, this.checkedOut - 1);
+    if (this.pooledBytes + buffer.size > this.maxPooledBytes) {
+      buffer.destroy();
+      return;
+    }
     const map = usage === 'uniform' ? this.freeUniform : this.freeStorage;
     const bucket = nextPow2(buffer.size);
     let bucketList = map.get(bucket);
@@ -141,18 +172,12 @@ export class BufferPool {
     }
     bucketList.push(buffer);
     this.poolCount++;
+    this.pooledBytes += buffer.size;
   }
 
   /** Return a buffer to the pool for recycling. */
   release(buf: GpuDataBuffer): void {
-    const bucket = nextPow2(buf.buffer.size);
-    let bucketList = this.freeStorage.get(bucket);
-    if (!bucketList) {
-      bucketList = [];
-      this.freeStorage.set(bucket, bucketList);
-    }
-    bucketList.push(buf.buffer);
-    this.poolCount++;
+    this.releaseRaw(buf.buffer, 'storage');
   }
 
   /** Release a uniform buffer previously handed out by acquireUniform. */
@@ -171,16 +196,27 @@ export class BufferPool {
     this.freeStorage.clear();
     this.freeUniform.clear();
     this.poolCount = 0;
+    this.pooledBytes = 0;
   }
 
-  /** Live buffers currently checked out of the pool. */
+  /** Buffers currently checked out of the pool (not idle). */
   get live(): number {
-    return this.liveCount;
+    return this.checkedOut;
   }
 
   /** Buffers sitting idle in the pool. */
   get pooled(): number {
     return this.poolCount;
+  }
+
+  /** Bytes currently retained by idle buffers (never exceeds the budget). */
+  get pooledBytesUsed(): number {
+    return this.pooledBytes;
+  }
+
+  /** Configured idle-byte ceiling. */
+  get pooledBytesLimit(): number {
+    return this.maxPooledBytes;
   }
 
   destroy(): void {

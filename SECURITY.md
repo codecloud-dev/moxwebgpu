@@ -51,7 +51,8 @@
 - 模型文件解析时的内存放大 / DoS
 
 ## 依赖与供应链
+- 依赖升级由 Dependabot 按月分组提 minor/patch PR，合并前需过对应测试；major 由人工评估。
+- 密钥、token、keystore 一律走 CI Secrets，不进仓库；CI 有密钥扫描（`.github/workflows/secret-scan.yml`，规则自带自测）。
+- 依赖告警由 GitHub Dependabot alerts 提供，高危依赖通常在 24 小时内响应。
 
-- 依赖升级由 Dependabot 自动提 PR，合并前需过对应测试。
-- 发布产物带 sha256 校验文件；国内镜像与 GitHub 主源结果必须一致。
-- 密钥、token、keystore 一律走 CI Secrets，不进仓库；CI 有密钥扫描。
+完整政策、协调披露时间表、致谢规则与匿名提交通道见 https://mox-site.pages.dev/security 。

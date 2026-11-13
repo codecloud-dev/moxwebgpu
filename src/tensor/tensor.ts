@@ -98,11 +98,29 @@ export class Tensor {
         if (hasMinusOne) throw new Error('moxwebgpu: reshape() supports at most one -1');
         hasMinusOne = true;
       } else {
+        if (!Number.isInteger(d) || d < 0) {
+          throw new Error(
+            `moxwebgpu: reshape() dimensions must be non-negative integers, got [${target}]`,
+          );
+        }
         known *= d;
       }
     }
+    let inferred = 0;
+    if (hasMinusOne) {
+      // JS `/` happily returns 3.3333 for 10/3. That fractional dimension
+      // then leaks into error messages and any downstream shape math. Require
+      // an exact integer solution up front with an actionable message.
+      if (known === 0 || this.size % known !== 0) {
+        throw new Error(
+          `moxwebgpu: cannot infer -1 dimension when reshaping [${this.shape}] ` +
+            `(${this.size} elements) to [${target}]: ${this.size} is not divisible by ${known}`,
+        );
+      }
+      inferred = this.size / known;
+    }
     const finalShape = hasMinusOne
-      ? target.map((d) => (d === -1 ? this.size / known : d))
+      ? target.map((d) => (d === -1 ? inferred : d))
       : target;
     if (numElements(finalShape) !== this.size) {
       throw new Error(`moxwebgpu: cannot reshape [${this.shape}] (${this.size}) to [${finalShape}] (${numElements(finalShape)})`);

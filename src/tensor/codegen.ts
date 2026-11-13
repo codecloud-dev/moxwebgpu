@@ -61,6 +61,18 @@ struct OpUniforms { n: u32, _p0: u32, scalar: f32, identity: f32 };
 const identityTyped = (t: string): string =>
   t === 'f32' ? 'uniforms.identity' : `${t}(uniforms.identity)`;
 
+/**
+ * The uniform block stores `scalar` as f32 (see `uniN`). For i32/u32 kernels
+ * it must be converted explicitly, otherwise expressions like
+ * `a[i] + uniforms.scalar` mix i32 with f32 and the WGSL module fails to
+ * compile. WGSL conversions saturate, matching JS `number` semantics closely
+ * enough for the integer dtypes we support.
+ */
+const scalarTyped = (dtype: DType): string => {
+  const t = dtypeInfo(dtype).wgsl;
+  return t === 'f32' ? 'uniforms.scalar' : `${t}(uniforms.scalar)`;
+};
+
 /** Uniform block with 2D dims (rows, cols) + scalar scratch + identity. */
 function uni2D(): string {
   return `
@@ -134,7 +146,7 @@ ${BIND_RW('out', t, 2)}
 fn main(@builtin(global_invocation_id) g: vec3u) {
   let i = g.x;
   if (i >= uniforms.n) { return; }
-  out[i] = ${expr('a[i]', 'uniforms.scalar')};
+  out[i] = ${expr('a[i]', scalarTyped(dtype))};
 }`;
 }
 
@@ -311,8 +323,9 @@ fn main(
   let start = w.x * ${WORKGROUP_SIZE}u * ${REDUCE_CHUNK}u;
   // Clamp the initial candidate to a valid index: lanes beyond n would
   // otherwise seed the tree with out-of-bounds reads (which return 0 and
-  // wrongly win argmin).
-  var acc: u32 = min(start + l.x, uniforms.n - 1u); // candidate index
+  // wrongly win argmin). Clamp n to at least 1 first: subtracting 1u from
+  // n=0 would wrap to UINT32_MAX under WGSL's wrapping unsigned arithmetic.
+  var acc: u32 = min(start + l.x, max(uniforms.n, 1u) - 1u); // candidate index
   for (var c: u32 = 0u; c < ${REDUCE_CHUNK}u; c++) {
     let idx = start + l.x + c * ${WORKGROUP_SIZE}u;
     if (idx < uniforms.n) {
