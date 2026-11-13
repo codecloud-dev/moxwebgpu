@@ -19,8 +19,11 @@
 
 name: Scheduled Release (引流)
 
-# 临时关闭发包：用户暂不打算发布到 pnpm/npm 包仓库（2026-10-09）
-enabled: false
+# 2026-11-13 审计修复：原来这里写了 `enabled: false`，但 GitHub Actions
+# 没有 `enabled` 这个顶层键，导致 workflow 校验失败、每次 push 都产生一个
+# 0 job 的红 run。改为 job 级 if 闸门：默认变量未设置 => job 跳过 => run 绿，
+# 且不会在 OIDC 未配置时误发包。需要发布时，在仓库 Settings → Secrets and
+# variables → Actions → Variables 设置对应变量为 true，再手动触发本流程。
 
 on:
   schedule:
