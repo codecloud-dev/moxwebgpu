@@ -6,6 +6,13 @@ body:
   - type: markdown
     attributes:
       value: |
+        > ⚠️ **安全漏洞请勿公开提交**：如果你发现的是安全漏洞（越权、注入、凭据泄露、供应链篡改等），**不要**在公开 Issue 里贴细节或 PoC。
+        > 请走 https://mox-site.pages.dev/security （支持完全匿名），或各仓 `Security → Report a vulnerability`。
+        > 行为准则投诉走独立通道：https://mox-site.pages.dev/report 。
+
+  - type: markdown
+    attributes:
+      value: |
         感谢来“批斗”我 😄 填得越详细，我修得越快。
   - type: textarea
     id: what

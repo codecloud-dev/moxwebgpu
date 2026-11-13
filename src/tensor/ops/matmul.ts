@@ -12,7 +12,10 @@ export const matmulDef: OpDef = {
   name: 'matmul',
   outShape: (shapes) => {
     if (shapes[0].length !== 2) {
-      throw new Error(`moxwebgpu: matmul left operand must be 2-D, got rank ${shapes[0].length}`);
+      throw new Error(
+        `moxwebgpu: matmul left operand must be 2-D, got shape [${shapes[0].join(',')}] ` +
+          `(rank ${shapes[0].length})`,
+      );
     }
     const [m, k] = shapes[0];
     const b = shapes[1];
@@ -21,13 +24,19 @@ export const matmulDef: OpDef = {
     // count) and the 16x16-tile kernel receives NaN workgroup counts.
     if (b.length === 1) {
       if (k !== b[0]) {
-        throw new Error(`moxwebgpu: matmul shape mismatch (${shapes[0]} x ${shapes[1]}): inner dims ${k} vs ${b[0]}`);
+        throw new Error(
+          `moxwebgpu: matmul shape mismatch: A[${shapes[0].join('x')}] @ B[${b.join('x')}] ` +
+            `— inner dims ${k} vs ${b[0]}`,
+        );
       }
       return [m];
     }
     const [k2, n] = b;
     if (k !== k2) {
-      throw new Error(`moxwebgpu: matmul shape mismatch (${shapes[0]} x ${shapes[1]}): inner dims ${k} vs ${k2}`);
+      throw new Error(
+        `moxwebgpu: matmul shape mismatch: A[${shapes[0].join('x')}] @ B[${b.join('x')}] ` +
+          `— inner dims ${k} vs ${k2}`,
+      );
     }
     return [m, n];
   },

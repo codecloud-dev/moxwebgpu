@@ -24,12 +24,25 @@ import { matmulDef } from './matmul.js';
 import { transposeDef, sliceDef, concatDef, expandDef } from './shape.js';
 import { softmaxDef } from './nn.js';
 
+/** Human-readable operand description for operand-type errors. */
+function operandType(v: unknown): string {
+  if (v === null) return 'null';
+  if (Array.isArray(v)) return 'array';
+  if (v instanceof Tensor) return 'Tensor';
+  return typeof v;
+}
+
 function binaryMethod(def: OpDef, scalarDef: OpDef) {
   return function (this: Tensor, other: Tensor | number): Tensor {
     if (typeof other === 'number') {
       return this.apply(scalarDef, [this], { scalar: other });
     }
-    return this.apply(def, [this, other], {});
+    if (other instanceof Tensor) {
+      return this.apply(def, [this, other], {});
+    }
+    throw new Error(
+      `moxwebgpu: ${def.name}() expects a Tensor or a number, got ${operandType(other)}`,
+    );
   };
 }
 
@@ -39,7 +52,12 @@ function rbinaryMethod(def: OpDef, scalarDef: OpDef) {
       // e.g. 1 - x  →  sub(scalar, x)
       return this.apply(scalarDef, [this], { scalar: other });
     }
-    return other.apply(def, [other, this], {});
+    if (other instanceof Tensor) {
+      return other.apply(def, [other, this], {});
+    }
+    throw new Error(
+      `moxwebgpu: ${def.name}() expects a Tensor or a number, got ${operandType(other)}`,
+    );
   };
 }
 
@@ -98,6 +116,15 @@ export function installTensorOps(proto: object): void {
   p.clamp = function (this: Tensor, lo: number, hi: number): Tensor {
     // clamp(x, lo, hi) = max(min(x, hi), lo). Both steps are scalar ops —
     // maxDef is the *binary* def and would read a missing second input shape.
+    if (typeof lo !== 'number' || typeof hi !== 'number' ||
+        !Number.isFinite(lo) || !Number.isFinite(hi)) {
+      throw new Error(
+        `moxwebgpu: clamp() expects finite numeric lo/hi, got ${operandType(lo)} / ${operandType(hi)}`,
+      );
+    }
+    if (lo > hi) {
+      throw new Error(`moxwebgpu: clamp() requires lo <= hi, got ${lo} > ${hi}`);
+    }
     return this.apply(maxScalarDef, [this.apply(minScalarDef, [this], { scalar: hi })], { scalar: lo });
   };
 

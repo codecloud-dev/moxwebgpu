@@ -91,11 +91,28 @@ export function globalReduceOpDef(name: string, spec: ReduceSpec): OpDef {
 export function argReduceOpDef(name: string, better: (candidate: string, best: string) => string): OpDef {
   return {
     name,
-    outShape: () => [1],
+    outShape: (shapes) => {
+      // Fail at the call site (argmax()/argmin()) rather than deep inside a
+      // dispatch: an empty tensor has no arg-extremum, and phase-1 would
+      // otherwise dispatch with n=0 and underflow `n - 1u` in WGSL.
+      if (numElements(shapes[0]) === 0) {
+        throw new Error(
+          `moxwebgpu: ${name}() requires a non-empty tensor, got shape [${shapes[0]}]`,
+        );
+      }
+      return [1];
+    },
     outDtype: () => 'u32',
     build: (shapes, dtypes) => {
       const dtype: DType = dtypes[0];
       const n = numElements(shapes[0]);
+      // Defence in depth: outShape already rejects this, but a node can also
+      // be built directly through OpDef.build().
+      if (n === 0) {
+        throw new Error(
+          `moxwebgpu: ${name}() requires a non-empty tensor, got shape [${shapes[0]}]`,
+        );
+      }
       const nw1 = Math.max(1, Math.ceil(n / (WG * CHUNK)));
       const steps: KernelStep[] = [
         {

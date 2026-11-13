@@ -152,7 +152,12 @@ export class Scheduler {
   async readback(buf: GpuDataBuffer): Promise<Float32Array | Int32Array | Uint32Array> {
     const { device, queue } = this.ctx;
     if (buf.elements === 0) return makeTypedArray(buf.dtype, 0);
-    const bytes = buf.buffer.size;
+    // Pooled GPUBuffers are rounded up to a power-of-two bucket, so the raw
+    // size includes padding that was never written. Copy only the logical
+    // payload: copying the whole bucket reads uninitialised GPU memory into
+    // the staging buffer for nothing (and makes every readback O(bucket)).
+    // This mirrors Kernel.run()'s `Math.min(gpuBuf.size, logical * bytes)`.
+    const bytes = Math.min(buf.buffer.size, buf.byteSize);
     const staging = device.createBuffer({
       size: bytes,
       usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
