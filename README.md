@@ -10,12 +10,12 @@
   <img src="https://img.shields.io/github/actions/workflow/status/codecloud-dev/moxwebgpu/ci.yml?branch=main&label=CI&color=8a7bff" alt="CI">
   <img src="https://img.shields.io/github/stars/codecloud-dev/moxwebgpu?style=social" alt="GitHub Stars">
   <img src="https://img.shields.io/github/discussions/codecloud-dev/moxwebgpu?label=Discussions&color=ff7ac3" alt="社区讨论">
-  <img src="https://img.shields.io/badge/version-1.0.1-8a7bff" alt="version">
-  <img src="https://img.shields.io/badge/npm-publish%20pending-ffb000" alt="npm">
+  <img src="https://img.shields.io/badge/version-1.1.3-8a7bff" alt="version">
+  <img src="https://img.shields.io/badge/npm-published-37d5d3" alt="npm">
   <img src="https://img.shields.io/badge/license-MIT-37d5d3" alt="license">
   <img src="https://img.shields.io/badge/WebGPU-GPGPU-8a7bff?logo=webgpu&logoColor=white" alt="WebGPU">
   <img src="https://img.shields.io/badge/deps-0-37d5d3" alt="zero deps">
-  <img src="https://img.shields.io/badge/tests-48%20passing-3DDC84" alt="tests">
+  <img src="https://img.shields.io/badge/tests-66%20unit-3DDC84" alt="tests">
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/Ops-30%2B-ff7ac3" alt="ops">
 </p>
@@ -94,7 +94,7 @@
 | 产物    | ESM + CJS + IIFE(浏览器全局 `MoxWebGPU`)+ 完整 `.d.ts`  |
 | 数据类型  | `f32` / `i32` / `u32`                            |
 | 内置算子  | 30+(逐元素 / 归约 / 矩阵 / 形状 / NN / 类型转换)              |
-| 测试    | 21 单元测试 + **27 个真实 GPU 端到端测试** + 微基准             |
+| 测试    | 66 单元测试 + **27 个真实 GPU 端到端测试** + 微基准             |
 | 最低环境  | 支持 WebGPU 的浏览器(Chrome / Edge 113+);Node ≥ 18(构建) |
 
 > **moxwebgpu 适合谁**:需要在浏览器里做矩阵运算、图像处理、信号处理、ML 前向推理、并行数值计算,又不想手写一屏 WebGPU 样板代码的你。  
@@ -176,12 +176,12 @@ WebGPU 的 compute pipeline 能力极强,但裸用它做一次向量加法,你�
 
 ## 📦 安装
 
-> 🟡 **待发布到 npm（配置已就绪，尚未实际上线）**：`package.json` 已就位（`version: 1.0.2`，`prepublishOnly` 会自动构建），OIDC 免 token 发布流程已配好（见 `.github/workflows/publish.yml`）。绑定 npm 账号后执行一次 `npm publish` 即上线——在此之前 `npm install moxwebgpu` **尚不可用**，请用下方「方式三：从源码构建」或在线 Demo。
+> ✅ **已发布到 npm**：包名 `@codecloud-dev/moxwebgpu`（当前 `version: 1.1.3`），OIDC 免 token 发布流程已配好（见 `.github/workflows/publish.yml`）。可直接用下方「方式二」安装；也可走「方式三」从源码构建。
 
 ### 🌐 方式一:浏览器 `<script>`(零构建)
 
 ```html
-<script src="https://unpkg.com/moxwebgpu/dist/moxwebgpu.browser.js"></script>
+<script src="https://unpkg.com/@codecloud-dev/moxwebgpu/dist/moxwebgpu.browser.js"></script>
 <script>
   const gpu = await MoxWebGPU.mox.init();
   console.log(await gpu.tensor([1, 2, 3]).sum().item()); // 6
@@ -190,19 +190,18 @@ WebGPU 的 compute pipeline 能力极强,但裸用它做一次向量加法,你�
 
 IIFE 产物暴露全局 `MoxWebGPU`,内含 `mox`、`MoxContext`、`Tensor`、`Kernel` 等全部导出。
 
-### 🔹 方式二:npm(Node / 打包器)  _（包尚未发布，当前不可用）_
+### 🔹 方式二:npm(Node / 打包器)
 
-> ⚠️ `moxwebgpu` 暂未发布到 npm  registry（见上方说明）。以下命令需在**正式发布后**才可用；
-> 现在请走方式三从源码构建。
+> 包名带 scope：`@codecloud-dev/moxwebgpu`（已发布到 npm registry）。
 
 ```bash
-npm install moxwebgpu
-# pnpm add moxwebgpu  /  yarn add moxwebgpu
+npm install @codecloud-dev/moxwebgpu
+# pnpm add @codecloud-dev/moxwebgpu  /  yarn add @codecloud-dev/moxwebgpu
 
 ```
 
 ```ts
-import { mox } from 'moxwebgpu';          // ESM
+import { mox } from '@codecloud-dev/moxwebgpu';          // ESM
 // const { mox } = require('moxwebgpu');  // CJS
 ```
 
@@ -340,7 +339,7 @@ t.destroy();      // 单个张量释放(通常不需要,池会自动回收中间
 moxwebgpu 1.0 起内置**反向模式自动微分**,直接叠加在现有惰性计算图上——`OpDef` 只是纯元数据 + codegen,每个算子附带一个 `backward`,反向图天然复用同一套算子,只有当你读取梯度时才上 GPU。
 
 ```ts
-import { mox } from 'moxwebgpu';
+import { mox } from '@codecloud-dev/moxwebgpu';
 
 const gpu = await mox.init();
 const x = gpu.tensor([1, 2, 3, 4]).withGrad();   // 标记可微叶子
@@ -379,7 +378,7 @@ console.log(await W.grad.toArray());  // dL/dW,形状与 W 一致
 下面用核心逻辑跑通一个 **线性回归（最小二乘 / MSE）**，梯度真的在 GPU 上算：
 
 ```ts
-import { mox } from 'moxwebgpu';
+import { mox } from '@codecloud-dev/moxwebgpu';
 const gpu = await mox.init();
 
 // 造一点训练数据：y ≈ 2x + 1
@@ -614,7 +613,7 @@ WebGPU validation 错误**不抛异常**:对象变 invalid、dispatch 变 no-op�
 
 | 套件                 | 数量        | 覆盖                                                                                                             |
 | ------------------ | --------- | -------------------------------------------------------------------------------------------------------------- |
-| `tests/unit/`      | 21 用例     | uniform 编码字节级校验、WGSL 生成、拓扑排序、OpDef 形状推导                                                                        |
+| `tests/unit/`      | 66 用例     | uniform 编码字节级校验、WGSL 生成、拓扑排序、OpDef 形状推导、自动微分、回归                                        |
 | `tests/gpu/`       | **27 用例** | 逐元素 / 广播 / 一元链 / 惰性链 / matmul 3 种尺寸 / 全部归约 / argmax / softmax / slice / concat / reshape 视图 / 深流水线 / 低层 Kernel |
 | `tests/gpu/bench/` | 微基准       | elementwise / matmul / 归约 / 链式(中位数统计)                                                                          |
 
@@ -645,7 +644,7 @@ chromium \
 | 命令                       | 作用                              |
 | ------------------------ | ------------------------------- |
 | `pnpm build`             | tsup 构建 ESM / CJS / IIFE + d.ts |
-| `pnpm test`              | 21 单元测试                         |
+| `pnpm test`              | 66 单元测试                         |
 | `pnpm test:gpu`          | 27 GPU 端到端(自动 SwiftShader/xvfb) |
 | `pnpm test:all`          | 两者都跑                            |
 | `pnpm bench`             | 微基准                             |
@@ -703,7 +702,7 @@ moxwebgpu/
 │           ├── shape.ts         # transpose / slice / concat
 │           └── nn.ts            # softmax
 ├── tests/
-│   ├── unit/core.test.ts        # 21 个单元测试(编码 / 图 / OpDef)
+│   ├── unit/                    # 单元测试(core / autograd / regression 共 66 例)
 │   └── gpu/
 │       ├── harness.ts           # Chrome + SwiftShader + xvfb 自动化套壳
 │       ├── ref.ts               # CPU 参考实现(matmul/softmax/argmax/argmin)

@@ -5,6 +5,20 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/),
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.3] - 2026-11-14
+
+### 升级依赖
+
+- 升级 devDependencies 到最新兼容版（不升破坏性 MAJOR）：
+  - `vitest` 3.2.7 → 4.1.12（修复 tinypool 原型污染 RCE 与 @vitest/mocker 路径穿越等 critical / moderate 漏洞）
+  - `tsup` 8.5.1 → 9.0.0（构建链路，已验证产物一致）
+  - `@types/node` 22.20.5 → 26.6.6（类型定义，仅 dev）
+- 保留 `pnpm.overrides` 不变：`vite` 锁 `>=7.3.7 <8`、`esbuild` 钉 `0.28.2`（仍为各自最新，已无已知漏洞）。
+- `pnpm audit` 由 5 个漏洞（2 critical / 3 moderate）降为 0。
+- `typescript`（5.x 最新）、`playwright-core` 已是最新兼容版，未改动。
+- `pnpm build` 与 `pnpm test`（66 单元测试）真实通过；`dist/index.js` 中 `MOXWEBGPU_VERSION` 由 tsup 构建期注入且等于 `1.1.3`。
+- 文档修正：README / README.en 版本徽章、npm「已发布」状态、scope 包名 `@codecloud-dev/moxwebgpu` 与 unpkg 路径、单测数 21 → 66。
+
 ## [Unreleased]
 
 计划中(见 README 路线图):f16/bf16、tensor-core matmul、多 GPU pass 融合、生态集成。
