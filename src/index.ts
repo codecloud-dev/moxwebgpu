@@ -34,7 +34,8 @@ export { backward, sumTo } from './graph/autograd.js';
 export * from './tensor/codegen.js';
 
 // ---- version ----
-export const MOXWEBGPU_VERSION = '1.0.1';
+// 由 tsup 构建期注入（见 tsup.config.ts 的 define），与 package.json 的 version 保持一致。
+export const MOXWEBGPU_VERSION = __MOXWEBGPU_VERSION__;
 
 import { Tensor } from './tensor/tensor.js';
 import { installTensorOps } from './tensor/ops/index.js';
