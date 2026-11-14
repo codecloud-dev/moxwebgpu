@@ -1,6 +1,6 @@
 {
-  "name": "moxwebgpu",
-  "version": "1.1.0",
+  "name": "@codecloud-dev/moxwebgpu",
+  "version": "1.1.1",
   "description": "⚡ A WebGPU compute (GPGPU) framework — typed tensors, raw kernels and a lazy compute graph, with reverse-mode autodiff, in one tiny package.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -56,9 +56,15 @@
   "devDependencies": {
     "@types/node": "^22.20.5",
     "@webgpu/types": "^0.1.64",
-    "playwright-core": "^1.65.0",
+    "playwright-core": "^1.65.1",
     "tsup": "^8.4.0",
     "typescript": "^5.7.3",
     "vitest": "^3.0.8"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": ">=7.3.7 <8",
+      "esbuild": "0.28.2"
+    }
   }
 }
