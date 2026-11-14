@@ -10,12 +10,12 @@
   <img src="https://img.shields.io/github/actions/workflow/status/codecloud-dev/moxwebgpu/ci.yml?branch=main&label=CI&color=8a7bff" alt="CI">
   <img src="https://img.shields.io/github/stars/codecloud-dev/moxwebgpu?style=social" alt="GitHub Stars">
   <img src="https://img.shields.io/github/discussions/codecloud-dev/moxwebgpu?label=Discussions&color=ff7ac3" alt="Discussions">
-  <img src="https://img.shields.io/badge/version-1.0.1-8a7bff" alt="version">
-  <img src="https://img.shields.io/badge/npm-publish%20pending-ffb000" alt="npm">
+  <img src="https://img.shields.io/badge/version-1.1.3-8a7bff" alt="version">
+  <img src="https://img.shields.io/badge/npm-published-37d5d3" alt="npm">
   <img src="https://img.shields.io/badge/license-MIT-37d5d3" alt="license">
   <img src="https://img.shields.io/badge/WebGPU-GPGPU-8a7bff?logo=webgpu&logoColor=white" alt="WebGPU">
   <img src="https://img.shields.io/badge/deps-0-37d5d3" alt="zero deps">
-  <img src="https://img.shields.io/badge/tests-48%20passing-3DDC84" alt="tests">
+  <img src="https://img.shields.io/badge/tests-66%20unit-3DDC84" alt="tests">
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/Ops-30%2B-ff7ac3" alt="ops">
 </p>
@@ -84,7 +84,7 @@ Core     BufferPool (power-of-two buckets) · PipelineCache (WGSL hash) · raw K
 - **Lazy by default** — a whole chain dispatches once on `.item()`; intermediates never leak
 - **30+ GPU ops** — elementwise, two-phase tree reductions, argmax/argmin, 16×16-tiled matmul, fused softmax, strided slicing/concat, zero-copy reshape
 - **Silent-failure defense** — shader compile errors surfaced with line/column via `getCompilationInfo()`
-- **48 passing tests** — 27 GPU e2e (value-compared against CPU references) + 21 unit tests, green even on GPU-less machines via SwiftShader + xvfb
+- **93 passing tests** — 66 unit tests (CPU-only, `pnpm test`) + 27 GPU e2e (value-compared against CPU references), green even on GPU-less machines via SwiftShader + xvfb
 - **Zero runtime dependencies**, ESM + CJS + IIFE + d.ts, ~30 KB browser bundle
 
 ## 💡 About this project
@@ -99,12 +99,12 @@ moxwebgpu is a standalone open-source library: rebuilding, properly, the WebGPU 
 
 ## 📦 Install
 
-> 🟡 **npm / CDN: publish pending (config ready)** — `moxwebgpu` is not on npm yet, so `npm install` / `unpkg` 404 online for now. The OIDC token-less publish flow is wired up (`.github/workflows/publish.yml`); once the npm account is linked it goes live with one `npm publish`. Meanwhile use **From source** below, or the [live demo](#browser-demo).
+> ✅ **Published to npm**: package name `@codecloud-dev/moxwebgpu` (current `version: 1.1.3`). OIDC token-less publish flow is wired up (`.github/workflows/publish.yml`). Install via **npm** below, or build **from source**.
 
 **Browser `<script>` (zero build):**
 
 ```html
-<script src="https://unpkg.com/moxwebgpu/dist/moxwebgpu.browser.js"></script>
+<script src="https://unpkg.com/@codecloud-dev/moxwebgpu/dist/moxwebgpu.browser.js"></script>
 <script>
   const gpu = await MoxWebGPU.mox.init();
   console.log(await gpu.tensor([1, 2, 3]).sum().item()); // 6
@@ -114,11 +114,11 @@ moxwebgpu is a standalone open-source library: rebuilding, properly, the WebGPU 
 **npm (Node / bundlers):**
 
 ```bash
-npm install moxwebgpu        # pnpm add moxwebgpu / yarn add moxwebgpu
+npm install @codecloud-dev/moxwebgpu        # pnpm add @codecloud-dev/moxwebgpu / yarn add @codecloud-dev/moxwebgpu
 ```
 
 ```ts
-import { mox } from 'moxwebgpu';           // ESM
+import { mox } from '@codecloud-dev/moxwebgpu';           // ESM
 // const { mox } = require('moxwebgpu');   // CJS
 ```
 
@@ -321,7 +321,7 @@ Built-in performance design: lazy graph (one readback per chain), refcounted int
 
 | Suite | Count | Coverage |
 | ----- | ----- | -------- |
-| `tests/unit/` | 21 | byte-level uniform encoders, WGSL codegen, topo sort, OpDef shapes |
+| `tests/unit/` | 66 | byte-level uniform encoders, WGSL codegen, topo sort, OpDef shapes, autograd, regression |
 | `tests/gpu/` | **27** | elementwise / broadcast / unary chains / lazy chains / matmul ×3 / all reductions / argmax / softmax / slice / concat / reshape views / deep pipelines / raw Kernel |
 | `tests/gpu/bench/` | bench | elementwise / matmul / reduce / chain (medians) |
 
@@ -345,7 +345,7 @@ chromium --enable-unsafe-webgpu --enable-features=Vulkan --no-sandbox
 | Command | What it does |
 | ------- | ------------ |
 | `pnpm build` | tsup → ESM / CJS / IIFE + d.ts |
-| `pnpm test` | 21 unit tests |
+| `pnpm test` | 66 unit tests |
 | `pnpm test:gpu` | 27 GPU e2e (auto SwiftShader/xvfb) |
 | `pnpm test:all` | both |
 | `pnpm bench` | micro-benchmarks |
@@ -374,7 +374,7 @@ moxwebgpu/
 │   ├── graph/                   # lazy(DAG/OpDef) · pipelineCache · scheduler
 │   └── tensor/                  # tensor.ts · codegen.ts · ops/{elementwise,reduce,matmul,shape,nn}
 ├── tests/
-│   ├── unit/core.test.ts        # 21 unit tests
+│   ├── unit/                     # unit tests (core / autograd / regression, 66 total)
 │   └── gpu/                     # harness · ref(CPU) · 3 suites + bench/
 ├── scripts/run-gpu-tests.sh     # VK_ICD + xvfb wrapper
 ├── examples/browser/index.html  # liquid-glass demo
