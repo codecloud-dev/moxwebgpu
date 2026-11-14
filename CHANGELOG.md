@@ -19,6 +19,16 @@
 - `pnpm build` 与 `pnpm test`（66 单元测试）真实通过；`dist/index.js` 中 `MOXWEBGPU_VERSION` 由 tsup 构建期注入且等于 `1.1.3`。
 - 文档修正：README / README.en 版本徽章、npm「已发布」状态、scope 包名 `@codecloud-dev/moxwebgpu` 与 unpkg 路径、单测数 21 → 66。
 
+### 修复 CI 类型检查（1.1.3 内追加）
+
+- `@types/node` 升到 26 后，CI 的 `pnpm exec tsc --noEmit` 报
+  `tests/gpu/harness.ts` 找不到 `node:fs` / `process`：`tsconfig.json` 的
+  `types` 白名单只列 `@webgpu/types`，旧版 `@types/node` 会被自动带入、
+  26 收紧后不再自动解析。已将 `node` 显式加入 `types` 数组（测试代码本就用
+  Node API，配置本就该列），而非回退依赖。
+- 复核 CI 三步契约全绿：`tsc --noEmit` 0 错误 / `pnpm build` 全产物 /
+  `pnpm test` 3 文件 66 用例全过。
+
 ## [Unreleased]
 
 计划中(见 README 路线图):f16/bf16、tensor-core matmul、多 GPU pass 融合、生态集成。
