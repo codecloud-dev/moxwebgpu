@@ -7,17 +7,21 @@
 <h1 align="center">moxwebgpu</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/github/actions/workflow/status/codecloud-dev/moxwebgpu/ci.yml?branch=main&label=CI&color=8a7bff" alt="CI">
-  <img src="https://img.shields.io/github/stars/codecloud-dev/moxwebgpu?style=social" alt="GitHub Stars">
-  <img src="https://img.shields.io/github/discussions/codecloud-dev/moxwebgpu?label=Discussions&color=ff7ac3" alt="Discussions">
-  <img src="https://img.shields.io/badge/version-1.1.3-8a7bff" alt="version">
-  <img src="https://img.shields.io/badge/npm-published-37d5d3" alt="npm">
-  <img src="https://img.shields.io/badge/license-MIT-37d5d3" alt="license">
-  <img src="https://img.shields.io/badge/WebGPU-GPGPU-8a7bff?logo=webgpu&logoColor=white" alt="WebGPU">
-  <img src="https://img.shields.io/badge/deps-0-37d5d3" alt="zero deps">
-  <img src="https://img.shields.io/badge/tests-66%20unit-3DDC84" alt="tests">
-  <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
-  <img src="https://img.shields.io/badge/Ops-30%2B-ff7ac3" alt="ops">
+  <a href="https://github.com/codecloud-dev/moxwebgpu"><img src="https://img.shields.io/badge/MoX_Series-WebGPU_%E8%AE%A1%E7%AE%97-8a7bff?style=for-the-badge&logo=github&logoColor=white" alt="MoX Series: WebGPU 计算"></a>
+  <a href="https://github.com/codecloud-dev/moxwebgpu/blob/main/README.md"><img src="https://img.shields.io/badge/WebGPU-GPGPU-14181A?style=for-the-badge&logo=webgpu&logoColor=3178C6" alt="WebGPU: GPGPU"></a>
+  <a href="https://github.com/codecloud-dev/moxwebgpu/blob/main/README.md"><img src="https://img.shields.io/badge/TypeScript-strict-14181A?style=for-the-badge&logo=typescript&logoColor=3178C6" alt="TypeScript: strict"></a>
+  <a href="https://github.com/codecloud-dev/moxwebgpu/blob/main/README.md"><img src="https://img.shields.io/badge/WGSL-%E5%8E%9F%E7%94%9F%E5%86%85%E6%A0%B8-14181A?style=for-the-badge&logo=webgpu&logoColor=37d5d3" alt="WGSL: 原生内核"></a>
+  <a href="https://github.com/codecloud-dev/moxwebgpu/blob/main/README.md"><img src="https://img.shields.io/badge/zero-%E4%BE%9D%E8%B5%96_0-14181A?style=for-the-badge&logo=npm&logoColor=3DDC84" alt="zero: 依赖 0"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/codecloud-dev/moxwebgpu/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/codecloud-dev/moxwebgpu/ci.yml?branch=main&style=flat-square&label=CI" alt="CI"></a>
+  <a href="https://www.npmjs.com/package/@codecloud-dev/moxwebgpu"><img src="https://img.shields.io/npm/v/%40codecloud-dev%2Fmoxwebgpu?style=flat-square&label=npm&color=37d5d3" alt="npm: @codecloud-dev/moxwebgpu"></a>
+  <a href="https://github.com/codecloud-dev/moxwebgpu/blob/main/LICENSE"><img src="https://img.shields.io/github/license/codecloud-dev/moxwebgpu?style=flat-square&color=37d5d3" alt="License"></a>
+  <a href="https://github.com/codecloud-dev/moxwebgpu/stargazers"><img src="https://img.shields.io/github/stars/codecloud-dev/moxwebgpu?style=flat-square&color=ff7ac3" alt="Stars"></a>
+  <a href="https://github.com/codecloud-dev/moxwebgpu/commits/main"><img src="https://img.shields.io/github/last-commit/codecloud-dev/moxwebgpu?style=flat-square&color=8a7bff" alt="Last commit"></a>
+  <a href="https://github.com/codecloud-dev/moxwebgpu"><img src="https://img.shields.io/badge/tests-66_unit-3DDC84?style=flat-square" alt="tests: 66 unit"></a>
+  <a href="https://github.com/codecloud-dev/moxwebgpu/pulls"><img src="https://img.shields.io/badge/PRs-welcome-8a7bff?style=flat-square&logo=github&logoColor=white" alt="PRs welcome"></a>
 </p>
 
 <p align="center">
