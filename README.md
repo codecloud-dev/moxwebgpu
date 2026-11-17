@@ -50,7 +50,7 @@
   <img src="assets/demo.svg" width="760" alt="moxwebgpu 浏览器 GPU 训练动图:数据流入 GPU、损失曲线持续下降">
 </p>
 
-> **同一份源码,浏览器运行、Node 构建与测试。** 没有独立显卡的机器上,用 Chrome 自带的 SwiftShader 软件渲染也能把 27 个真实 WebGPU 端到端测试全部跑绿——这是 moxwebgpu 与大多数「纸面 WebGPU 项目」最大的不同:**它的每一行 GPU 代码都被真实验证过**。
+> **同一份源码,浏览器运行、Node 构建与测试。** 没有独立显卡的机器上,用 Chrome 自带的 SwiftShader 软件渲染也能把 33 个真实 WebGPU 端到端测试全部跑绿——这是 moxwebgpu 与大多数「纸面 WebGPU 项目」最大的不同:**它的每一行 GPU 代码都被真实验证过**。
 
 <details>
 
@@ -98,7 +98,7 @@
 | 产物    | ESM + CJS + IIFE(浏览器全局 `MoxWebGPU`)+ 完整 `.d.ts`  |
 | 数据类型  | `f32` / `i32` / `u32`                            |
 | 内置算子  | 30+(逐元素 / 归约 / 矩阵 / 形状 / NN / 类型转换)              |
-| 测试    | 66 单元测试 + **27 个真实 GPU 端到端测试** + 微基准             |
+| 测试    | 66 单元测试 + **33 个真实 GPU 端到端测试** + 微基准             |
 | 最低环境  | 支持 WebGPU 的浏览器(Chrome / Edge 113+);Node ≥ 18(构建) |
 
 > **moxwebgpu 适合谁**:需要在浏览器里做矩阵运算、图像处理、信号处理、ML 前向推理、并行数值计算,又不想手写一屏 WebGPU 样板代码的你。  
@@ -618,7 +618,7 @@ WebGPU validation 错误**不抛异常**:对象变 invalid、dispatch 变 no-op�
 | 套件                 | 数量        | 覆盖                                                                                                             |
 | ------------------ | --------- | -------------------------------------------------------------------------------------------------------------- |
 | `tests/unit/`      | 66 用例     | uniform 编码字节级校验、WGSL 生成、拓扑排序、OpDef 形状推导、自动微分、回归                                        |
-| `tests/gpu/`       | **27 用例** | 逐元素 / 广播 / 一元链 / 惰性链 / matmul 3 种尺寸 / 全部归约 / argmax / softmax / slice / concat / reshape 视图 / 深流水线 / 低层 Kernel |
+| `tests/gpu/`       | **33 用例** | 逐元素 / 广播 / 一元链 / 惰性链 / matmul 3 种尺寸 / 全部归约 / argmax / softmax / slice / concat / reshape 视图 / 深流水线 / 低层 Kernel |
 | `tests/gpu/bench/` | 微基准       | elementwise / matmul / 归约 / 链式(中位数统计)                                                                          |
 
 GPU 用例全部与 **CPU 参考实现**逐值比对(matmul / softmax / argmax / argmin 均有 CPU 版),不是「不崩就算过」。
@@ -649,7 +649,7 @@ chromium \
 | ------------------------ | ------------------------------- |
 | `pnpm build`             | tsup 构建 ESM / CJS / IIFE + d.ts |
 | `pnpm test`              | 66 单元测试                         |
-| `pnpm test:gpu`          | 27 GPU 端到端(自动 SwiftShader/xvfb) |
+| `pnpm test:gpu`          | 33 GPU 端到端(自动 SwiftShader/xvfb) |
 | `pnpm test:all`          | 两者都跑                            |
 | `pnpm bench`             | 微基准                             |
 | `pnpm demo`              | 构建并起本地演示页(localhost:5173)       |
@@ -754,7 +754,7 @@ moxwebgpu/
 
 ## 🗺️ 路线图
 
-- [x] **v0.1** —— 三层架构、30+ 算子、27 个真实 GPU e2e、液态玻璃演示
+- [x] **v0.1** —— 三层架构、30+ 算子、33 个真实 GPU e2e、液态玻璃演示
 - [x] **v0.2** —— 任意轴归约(任意 rank/负轴)、整型归约修复、调度器 temp 回收加固
 - [x] **v1.0** —— 反向模式自动微分(叠加在现有 lazy graph 上)、matmul/softmax/sum/mean 反向、OIDC 免 token 发布到 npm
 - [ ] 更多 NN 算子:layernorm / embedding / conv1d(规划中,1.0.x)

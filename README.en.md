@@ -88,7 +88,7 @@ Core     BufferPool (power-of-two buckets) · PipelineCache (WGSL hash) · raw K
 - **Lazy by default** — a whole chain dispatches once on `.item()`; intermediates never leak
 - **30+ GPU ops** — elementwise, two-phase tree reductions, argmax/argmin, 16×16-tiled matmul, fused softmax, strided slicing/concat, zero-copy reshape
 - **Silent-failure defense** — shader compile errors surfaced with line/column via `getCompilationInfo()`
-- **93 passing tests** — 66 unit tests (CPU-only, `pnpm test`) + 27 GPU e2e (value-compared against CPU references), green even on GPU-less machines via SwiftShader + xvfb
+- **99 passing tests** — 66 unit tests (CPU-only, `pnpm test`) + 33 GPU e2e (value-compared against CPU references), green even on GPU-less machines via SwiftShader + xvfb
 - **Zero runtime dependencies**, ESM + CJS + IIFE + d.ts, ~30 KB browser bundle
 
 ## 💡 About this project
@@ -326,7 +326,7 @@ Built-in performance design: lazy graph (one readback per chain), refcounted int
 | Suite | Count | Coverage |
 | ----- | ----- | -------- |
 | `tests/unit/` | 66 | byte-level uniform encoders, WGSL codegen, topo sort, OpDef shapes, autograd, regression |
-| `tests/gpu/` | **27** | elementwise / broadcast / unary chains / lazy chains / matmul ×3 / all reductions / argmax / softmax / slice / concat / reshape views / deep pipelines / raw Kernel |
+| `tests/gpu/` | **33** | elementwise / broadcast / unary chains / lazy chains / matmul ×3 / all reductions / argmax / softmax / slice / concat / reshape views / deep pipelines / raw Kernel |
 | `tests/gpu/bench/` | bench | elementwise / matmul / reduce / chain (medians) |
 
 GPU cases are value-compared against **CPU reference implementations** — not "didn't crash" tests.
@@ -350,7 +350,7 @@ chromium --enable-unsafe-webgpu --enable-features=Vulkan --no-sandbox
 | ------- | ------------ |
 | `pnpm build` | tsup → ESM / CJS / IIFE + d.ts |
 | `pnpm test` | 66 unit tests |
-| `pnpm test:gpu` | 27 GPU e2e (auto SwiftShader/xvfb) |
+| `pnpm test:gpu` | 33 GPU e2e (auto SwiftShader/xvfb) |
 | `pnpm test:all` | both |
 | `pnpm bench` | micro-benchmarks |
 | `pnpm demo` | build + serve the demo page (:5173) |
