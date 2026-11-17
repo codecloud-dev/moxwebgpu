@@ -59,6 +59,8 @@ I read every issue and fix what I can, fast. Let's grow this from "runs" to "del
 - [💡 About this project](#about-this-project)
 - [📦 Install](#install)
 - [🚀 Quick start](#quick-start)
+- [🧠 Autodiff (reverse mode)](#-autodiff-reverse-mode--training)
+- [🚀 Browser training walkthrough](#-browser-training-walkthrough-no-install-train-in-page)
 - [📚 Unified API](#unified-api)
 - [🐛 Error handling](#error-handling)
 - [⚡ Benchmarks](#benchmarks)
@@ -66,6 +68,7 @@ I read every issue and fix what I can, fast. Let's grow this from "runs" to "del
 - [🌐 Browser demo](#browser-demo)
 - [📦 Project structure](#project-structure)
 - [🗺️ Roadmap](#roadmap)
+- [❓ FAQ](#-faq)
 - [🤝 Contributing](#contributing)
 - [💖 Supporting](#supporting)
 - [📜 License](#license)
@@ -87,6 +90,7 @@ Core     BufferPool (power-of-two buckets) · PipelineCache (WGSL hash) · raw K
 - **One unified API** — reductions, broadcasting and elementwise ops share one calling convention
 - **Lazy by default** — a whole chain dispatches once on `.item()`; intermediates never leak
 - **30+ GPU ops** — elementwise, two-phase tree reductions, argmax/argmin, 16×16-tiled matmul, fused softmax, strided slicing/concat, zero-copy reshape
+- **Reverse-mode autodiff built in** — `.withGrad()` / `.backward()` fill `.grad` lazily; train models entirely in the browser (since v1.0)
 - **Silent-failure defense** — shader compile errors surfaced with line/column via `getCompilationInfo()`
 - **99 passing tests** — 66 unit tests (CPU-only, `pnpm test`) + 33 GPU e2e (value-compared against CPU references), green even on GPU-less machines via SwiftShader + xvfb
 - **Zero runtime dependencies**, ESM + CJS + IIFE + d.ts, ~30 KB browser bundle
@@ -194,6 +198,101 @@ t.max(other)   // elementwise with another tensor
 // unambiguous aliases: maxReduce / minReduce
 ```
 
+### 🧠 Autodiff (reverse mode / training)
+
+Since v1.0 moxwebgpu ships **reverse-mode automatic differentiation** layered directly on top of the lazy graph — an `OpDef` is pure metadata + codegen, each op carries a `backward`, and the reverse graph reuses the same ops. The GPU is touched only when you read a gradient.
+
+```ts
+import { mox } from '@codecloud-dev/moxwebgpu';
+
+const gpu = await mox.init();
+const x = gpu.tensor([1, 2, 3, 4]).withGrad();   // mark a differentiable leaf
+const loss = x.mul(x).sum();                       // L = Σ x²
+
+loss.backward();                                   // backprop
+console.log(await x.grad.toArray());               // [2, 4, 6, 8] = dL/dx
+```
+
+Three things to know:
+
+- **`.withGrad()`**: marks a leaf as requiring gradients (other leaves are skipped by default).
+- **`.backward()`**: walks the scalar loss in reverse-topological order, filling `.grad` on every `requiresGrad` leaf. The whole pass only builds the lazy graph — it **never touches the GPU** until you `await x.grad.toArray()`.
+- **Broadcast-correct**: binary-op gradients use `sumTo` to reduce back to the smaller operand's shape; `sum/mean/softmax` gradients broadcast back via `expand`.
+
+```ts
+// A minimal linear layer, forward + backward
+const W = gpu.tensor([[0.1, 0.2], [0.3, 0.4]]).withGrad();
+const inp = gpu.tensor([1, 1]);
+const pred = W.matmul(inp);          // [2]
+const loss = pred.mul(pred).sum();   // Σ pred²
+loss.backward();
+console.log(await W.grad.toArray());  // dL/dW, same shape as W
+```
+
+**Ops with a registered backward**: add/sub/mul/div (scalars and broadcast included), neg/abs/exp/log/sqrt/square/relu/sigmoid/tanh, matmul, sum/mean (global and any axis), softmax (last axis, numerically stable).
+
+> On the roadmap: layernorm / embedding / conv1d, pass fusion, Web Worker execution — planned for 1.0.x, not in this release.
+
+---
+
+### 🚀 Browser training walkthrough (no install — train a model in-page)
+
+> **This is moxwebgpu's most underrated capability**: it doesn't just do one-off GPGPU compute — it runs a full **autodiff + gradient-descent training loop right in the browser**. Data never leaves the page, no backend required; any laptop / phone / Raspberry Pi with WebGPU can train. Combined with the `<script>`-tag SDK above, any site can let a visitor's GPU train a small model on the spot.
+
+The core logic below trains **linear regression (least squares / MSE)**; the gradients really are computed on the GPU:
+
+```ts
+const gpu = await mox.init();
+const X = gpu.tensor([[0], [1], [2], [3]]);
+const Y = gpu.tensor([[1], [3], [5], [7]]);   // y ≈ 2x + 1
+const lr = 0.05;
+let W = gpu.tensor([[0]]).withGrad();          // differentiable parameters
+let b = gpu.tensor([[0]]).withGrad();
+
+for (let step = 0; step < 200; step++) {
+  const pred = X.matmul(W).add(b);             // ŷ = X·W + b
+  const diff = pred.sub(Y);
+  const loss = diff.mul(diff).mean();          // MSE
+  loss.backward();                             // gradients fill W.grad / b.grad (lazy, still on graph)
+
+  // Hand-written SGD: read the updated values back, then rebuild differentiable leaves.
+  W = gpu.tensor(await W.sub(W.grad.mul(lr)).toArray()).withGrad();
+  b = gpu.tensor(await b.sub(b.grad.mul(lr)).toArray()).withGrad();
+}
+console.log('trained W, b =', await W.toArray(), await b.toArray()); // ≈ [[2]], [[1]]
+```
+
+- **Forward and backward stay on the lazy graph**: `backward()` only builds the graph and fills `.grad`; nothing is dispatched until you `await ...toArray()` — no per-step CPU↔GPU round-trips.
+- **No built-in optimizers yet**: training hand-writes `W = W - lr * W.grad` as above. `SGD / Adam` are on the roadmap.
+- **Trainable leaves need `withGrad()`**: only marked leaves accumulate `.grad`, saving GPU memory.
+
+#### 🔥 Two-layer MLP (hidden layer + sigmoid)
+
+Linear regression is one line; real models are multi-layer. The same hand-written SGD trains a **two-layer MLP** (input → hidden sigmoid → output):
+
+```ts
+const w1 = gpu.tensor([[0.1, -0.2], [0.3, 0.4]]).withGrad();
+const b1 = gpu.tensor([0.0, 0.0]).withGrad();
+const w2 = gpu.tensor([[0.2], [-0.1]]).withGrad();
+const b2 = gpu.tensor([0.0]).withGrad();
+
+const x = gpu.tensor([[1, 0], [0, 1]]);
+const y = gpu.tensor([[1], [0]]);
+
+for (let i = 0; i < 300; i++) {
+  const h = x.matmul(w1).add(b1).sigmoid();
+  const pred = h.matmul(w2).add(b2);
+  const diff = pred.sub(y);
+  diff.mul(diff).mean().backward();                 // autodiff handles matmul / bias / sigmoid / broadcast
+  w1 = w1.sub(w1.grad.mul(lr)); b1 = b1.sub(b1.grad.mul(lr));
+  w2 = w2.sub(w2.grad.mul(lr)); b2 = b2.sub(b2.grad.mul(lr));
+}
+```
+
+Backprop handles **matmul / bias add / sigmoid / broadcast** automatically — you only write the forward pass, one `backward()`, and the parameter update.
+
+---
+
 ### ⚙️ Raw kernel escape hatch
 
 ```ts
@@ -273,6 +372,7 @@ const res = await k.run([a.data, out], { elements: 5 }); // → Float32Array(5) 
 | Shape | transpose (2D), slice (≤4D), concat, reshape (zero-copy) | generic ND gather/copy (vec4 uniforms) |
 | NN | softmax | fused 3-pass per row |
 | Dtype | cast f32↔i32↔u32 | single pass, truncation |
+| Autodiff | `.withGrad()` / `.backward()` / `.grad` on differentiable leaves | reverse graph reuses forward ops, broadcast-correct via `sumTo`/`expand`, GPU touched only on read |
 
 ### 🔢 dtypes & uniform layout
 
@@ -391,11 +491,35 @@ Want to add an op? `OpDef` = pure metadata (shape inference + codegen) → two t
 
 ## 🗺️ Roadmap
 
-- [ ] f16 / bf16 dtypes
-- [x] arbitrary-axis reductions (any rank, negative axes)
-- [ ] tensor-core-friendly matmul (double buffering)
-- [ ] multi-pass fusion in the scheduler
-- [ ] Ecosystem integrations
+- [x] **v0.1** — three-layer architecture, 30+ ops, 33 real GPU e2e tests, liquid-glass demo
+- [x] **v0.2** — arbitrary-axis reductions (any rank / negative axes), integer reduction fixes, scheduler temp recycling
+- [x] **v1.0** — reverse-mode autodiff on the lazy graph, backward for matmul/softmax/sum/mean, token-free OIDC publishing to npm
+- [x] npm first publish (`@codecloud-dev/moxwebgpu`, currently `1.1.3`) + docs site live
+- [ ] More NN ops: layernorm / embedding / conv1d
+- [ ] Adjacent-elementwise op pass fusion (fewer dispatches)
+- [ ] Run inside a Web Worker / OffscreenCanvas
+- [ ] f16 / bf16 dtypes, SGD / Adam optimizers
+- [ ] tensor-core-friendly matmul (double buffering), ecosystem integrations
+
+## ❓ FAQ
+
+**Q: My browser console says `navigator.gpu is undefined`?**  
+A: WebGPU needs Chrome/Edge 113+ and a secure context (https or localhost). Opening via `file://` won't work — use `pnpm demo` to start a local server.
+
+**Q: Results are all zeros / garbage?**  
+A: 99% of the time it's a silent WGSL compile failure (no-op). moxwebgpu prints compile errors to the console with line/column numbers — fix the shader accordingly. Using the built-in ops avoids this entirely.
+
+**Q: How does this relate to TensorFlow.js / transformers.js?**  
+A: They are **model-centric** — prebuilt models for inference. moxwebgpu is **op-centric** — NumPy-like raw compute power plus an escape hatch, exactly the general GPGPU foundation they don't provide.
+
+**Q: Does it support training (backprop)?**  
+A: Yes. Since v1.0 reverse-mode autodiff is built in: call `.withGrad()` on leaves, build the forward graph, then `.backward()` fills `.grad` (lazily — GPU is touched only on read). See [Autodiff](#-autodiff-reverse-mode--training).
+
+**Q: Why does `pnpm test:gpu` pass on my machine — I don't have an NVIDIA card?**  
+A: SwiftShader — Chrome's pure-software Vulkan implementation. The GPU test recipe **does not require a real GPU**, and CI runs the same way.
+
+**Q: Do i32/u32 multiplies overflow?**  
+A: They follow WGSL semantics (bitwise wrap-around). Reduction identities, encoders, and readback views all handle this per dtype.
 
 ## 🤝 Contributing
 
