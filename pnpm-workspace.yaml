@@ -1,0 +1,7 @@
+packages:
+  - "."
+
+# pnpm 10+ 起，overrides 必须从 package.json 迁到这里（package.json 的 pnpm 字段已不再读取）
+overrides:
+  vite: ">=7.3.7 <8"
+  esbuild: 0.28.2
