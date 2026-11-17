@@ -20,7 +20,7 @@ jobs:
       - name: 单向镜像到 Gitee
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
-          GITEE_REPO: thousand-code-crafts/${{ github.event.repository.name }}
+          GITEE_REPO: codecloud-dev/${{ github.event.repository.name }}
         run: |
           if [ -z "$GITEE_TOKEN" ]; then
             echo "::error::未配置 GITEE_TOKEN secret，跳过镜像（请在仓库 Settings → Secrets 配置）"
@@ -28,7 +28,7 @@ jobs:
           fi
           git remote add gitee "https://gitee.com/${GITEE_REPO}.git"
           git config --local "http.https://gitee.com/.extraheader" \
-            "Authorization: Basic $(printf 'thousand-code-crafts:%s' "$GITEE_TOKEN" | base64 -w0)"
+            "Authorization: Basic $(printf 'codecloud-dev:%s' "$GITEE_TOKEN" | base64 -w0)"
           # Gitee 偶发连接超时（>300s），自动重试 3 次兜底
           for attempt in 1 2 3; do
             echo "::group::镜像尝试第 $attempt 次"
