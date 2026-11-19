@@ -17,6 +17,31 @@ jobs:
       # ⚠️ 不用 --mirror：GitHub 的 refs/pull/* 会被 Gitee 当隐藏引用拒绝
       #    （deny updating a hidden ref），显式同步 heads+tags。
       # ⚠️ token 不走 remote URL（防日志泄露），走 http.extraheader。
+      # 镜像副本统一身份为 GitHub noreply：Gitee hidden-email hook 只接受可反查的公开邮箱，
+      # 历史里的 QQ / 163 / 旧 noreply / MoX Agent 等身份必须在临时副本里清掉；dependabot 保留。
+      - name: 统一镜像副本历史身份（GitHub noreply）
+        run: |
+          python3 -m pip install --quiet git-filter-repo
+          CANON_NAME="codecloud-dev"
+          CANON_EMAIL="177202808+codecloud-dev@users.noreply.github.com"
+          git log --all --format='%an|%ae' | sort -u | while IFS='|' read -r name email; do
+            [ "$email" = "$CANON_EMAIL" ] && continue
+            case "$email" in
+              49699333+dependabot*) continue ;;
+            esac
+            printf '%s <%s> %s <%s>\n' "$CANON_NAME" "$CANON_EMAIL" "$name" "$email"
+          done > /tmp/mirror-mailmap
+          if [ -s /tmp/mirror-mailmap ]; then
+            git filter-repo --force --mailmap /tmp/mirror-mailmap >/tmp/mirror-filter-repo.log 2>&1
+          fi
+          BAD="$(git log --all --format='%an|%ae' | sort -u \
+            | grep -v -x -F "codecloud-dev|$CANON_EMAIL" \
+            | grep -v -x -F 'dependabot[bot]|49699333+dependabot[bot]@users.noreply.github.com')"
+          if [ -n "$BAD" ]; then
+            echo "::error::镜像副本仍含非 canonical 身份，拒绝推送：$BAD"
+            exit 1
+          fi
+
       - name: 单向镜像到 Gitee
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
