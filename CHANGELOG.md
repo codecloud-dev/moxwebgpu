@@ -5,6 +5,25 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/),
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.4] - 2026-11-19
+
+本轮是副副旗舰深度升级：不靠 issue 清单，直接真跑 GPU 数值梯度测试，抓出三个会让训练结果静默错误的真 bug，并修掉一个会让 GPU 测试拿旧构建产物验证的假绿通道。
+
+### 修复
+
+- **ReLU 梯度用错对象**：旧实现用 `sign(relu(x))` 判定导数，而 `relu(x) >= 0`，整个负半轴都拿到 `0.5` 的虚假梯度；死 ReLU 本该完全不更新。改为用输入 `sign(x)`，并由 GPU 数值梯度测试钉死。
+- **广播轴 `sumTo` 选错轴**：旧启发式比较首维，遇到 `[2,2] * [2]` 这类方形张量会把行广播误判成列广播，梯度 reduce 到错误的轴（真跑出现 3 vs 4 的偏差）。改为与 `broadcastMode` 一致的尾部对齐规则：目标尾维等于当前尾维 → 行广播，sum 掉首轴；否则 sum 掉尾轴。
+- **`pow` 完全没有注册反向传播**：`powDef` / `powScalarDef` 只存在前向算子，`backward()` 遇到幂运算会静默产出 `null`，训练 containing power term 的 loss 会整段丢梯度。补上 `x^y` 双操作数梯度 `g·y·x^(y-1)` / `g·x^y·ln(x)` 与标量指数梯度 `g·c·x^(c-1)`，并加两个 GPU 数值梯度回归。
+- **GPU 测试假绿通道**：`test:gpu` 直接加载 `dist/moxwebgpu.browser.js`，但不先构建；源码修完后旧 bundle 仍在被验证。现把 `test:gpu` 改成先 `pnpm build` 再跑浏览器测试，避免拿过期产物当真绿/真红。
+
+### 验证
+
+- `pnpm exec tsc --noEmit` EXIT=0。
+- `pnpm test` EXIT=0：3 文件 / **66 单元测试**全过。
+- `pnpm test:gpu` EXIT=0：先真构建（ESM/CJS/IIFE/DTS），再在 SwiftShader Vulkan 上跑 5 文件 / **37 GPU 端到端测试**全过，包含新增 pow 数值梯度回归。
+- `pnpm bench` EXIT=0（真实 GPU dispatch + readback，SwiftShader 软件渲染，数值随机器负载波动）：add 1M f32 **67.80 ms**；matmul 512×512 **597.70 ms（0.45 GFLOP/s）**；sum 1M f32 **35.30 ms**；add→relu→mul→sum 1M **199.10 ms**。
+- `dist/index.js` 中 `MOXWEBGPU_VERSION` 由构建期注入为 `1.1.4`。
+
 ## [1.1.3] - 2026-11-14
 
 ### 升级依赖

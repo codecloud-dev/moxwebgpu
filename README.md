@@ -180,7 +180,7 @@ WebGPU 的 compute pipeline 能力极强,但裸用它做一次向量加法,你�
 
 ## 📦 安装
 
-> ✅ **已发布到 npm**：包名 `@codecloud-dev/moxwebgpu`（当前 `version: 1.1.3`），OIDC 免 token 发布流程已配好（见 `.github/workflows/publish.yml`）。可直接用下方「方式二」安装；也可走「方式三」从源码构建。
+> ✅ **已发布到 npm**：包名 `@codecloud-dev/moxwebgpu`（当前 `version: 1.1.4`），OIDC 免 token 发布流程已配好（见 `.github/workflows/publish.yml`）。可直接用下方「方式二」安装；也可走「方式三」从源码构建。
 
 ### 🌐 方式一:浏览器 `<script>`(零构建)
 

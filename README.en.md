@@ -107,7 +107,7 @@ moxwebgpu is a standalone open-source library: rebuilding, properly, the WebGPU 
 
 ## 📦 Install
 
-> ✅ **Published to npm**: package name `@codecloud-dev/moxwebgpu` (current `version: 1.1.3`). OIDC token-less publish flow is wired up (`.github/workflows/publish.yml`). Install via **npm** below, or build **from source**.
+> ✅ **Published to npm**: package name `@codecloud-dev/moxwebgpu` (current `version: 1.1.4`). OIDC token-less publish flow is wired up (`.github/workflows/publish.yml`). Install via **npm** below, or build **from source**.
 
 **Browser `<script>` (zero build):**
 
@@ -494,7 +494,7 @@ Want to add an op? `OpDef` = pure metadata (shape inference + codegen) → two t
 - [x] **v0.1** — three-layer architecture, 30+ ops, 33 real GPU e2e tests, liquid-glass demo
 - [x] **v0.2** — arbitrary-axis reductions (any rank / negative axes), integer reduction fixes, scheduler temp recycling
 - [x] **v1.0** — reverse-mode autodiff on the lazy graph, backward for matmul/softmax/sum/mean, token-free OIDC publishing to npm
-- [x] npm first publish (`@codecloud-dev/moxwebgpu`, currently `1.1.3`) + docs site live
+- [x] npm first publish (`@codecloud-dev/moxwebgpu`, currently `1.1.4`) + docs site live
 - [ ] More NN ops: layernorm / embedding / conv1d
 - [ ] Adjacent-elementwise op pass fusion (fewer dispatches)
 - [ ] Run inside a Web Worker / OffscreenCanvas

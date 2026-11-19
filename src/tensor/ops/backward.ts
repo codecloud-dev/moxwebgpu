@@ -12,6 +12,7 @@ import {
   addScalarDef, subScalarDef, rsubScalarDef,
   mulScalarDef, divScalarDef, rdivScalarDef,
   negDef, absDef, expDef, logDef, sqrtDef, squareDef, reluDef, sigmoidDef, tanhDef,
+  powDef, powScalarDef,
 } from './elementwise.js';
 import { sumDef, meanDef } from './reduce.js';
 import { matmulDef } from './matmul.js';
@@ -48,6 +49,16 @@ export function installBackward(): void {
   divScalarDef.backward = (_i, _o, g, attrs) => [g.div(attrs.scalar as number)];
   // rdiv: c / x -> d/dx = -c g / x^2
   rdivScalarDef.backward = (_i, x, g, attrs) => [g.mul(attrs.scalar as number).div(x.mul(x)).neg()];
+  // pow: tensor exponent x^y — d/dx = g·y·x^(y-1), d/dy = g·x^y·ln(x) (x>0).
+  powDef.backward = binary(
+    (a, b, g) => g.mul(b).mul(a.pow(b.sub(1))),
+    (a, b, g) => g.mul(a.pow(b)).mul(a.log()),
+  );
+  // pow: scalar exponent x^c — d/dx = g·c·x^(c-1).
+  powScalarDef.backward = (inputs, _o, g, attrs) => {
+    const c = attrs.scalar as number;
+    return [g.mul(c).mul(inputs[0].pow(c - 1))];
+  };
 
   // ---- unary ----
   negDef.backward = (_i, _o, g) => [g.neg()];
@@ -56,8 +67,11 @@ export function installBackward(): void {
   logDef.backward = (inputs, _o, g) => [g.div(inputs[0])];
   sqrtDef.backward = (_i, o, g) => [g.div(o.mul(2))];
   squareDef.backward = (inputs, _o, g) => [g.mul(inputs[0].mul(2))];
-  // relu'(x) = step(x); approximated as (sign(x)+1)/2 (0.5 exactly at 0, harmless)
-  reluDef.backward = (_i, o, g) => [g.mul(o.sign().add(1).div(2))];
+  // relu'(x) = step(x); approximated as (sign(x)+1)/2 (0.5 exactly at 0, harmless).
+  // Use the *input's* sign, not the relu output's: relu(x) >= 0 for all x, so
+  // sign(relu(x)) is 0 on the whole negative half-axis and would hand every
+  // dead ReLU a spurious 0.5 gradient (verified by the GPU numerical test).
+  reluDef.backward = (inputs, _o, g) => [g.mul(inputs[0].sign().add(1).div(2))];
   sigmoidDef.backward = (_i, o, g) => [g.mul(o.mul(o.neg().add(1)))];
   tanhDef.backward = (_i, o, g) => [g.mul(o.mul(o).neg().add(1))];
 

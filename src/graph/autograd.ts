@@ -54,8 +54,16 @@ export function sumTo(t: Tensor, shape: number[]): Tensor {
     return cur.reshape();
   }
   while (cur.shape.length > shape.length) {
-    const dropLast = shape.length > 0 && cur.shape[0] === shape[0];
-    cur = dropLast ? cur.sum(cur.shape.length - 1) : cur.sum(0);
+    // Decide which axis the broadcast operand occupied by aligning dims from
+    // the *tail*, mirroring broadcastMode's precedence (row broadcast wins).
+    // A row-broadcast target ([K]) matches cur's trailing dim ([M,K]) — drop
+    // the leading axis. A column-broadcast target ([M]) matches cur's leading
+    // dim ([M,K]) — drop the trailing axis. Comparing the leading dims (the
+    // old heuristic) is ambiguous for square operands ([2,2] * [2]) and sums
+    // the wrong axis; GPU numerical tests caught a 3-vs-4 gradient error.
+    const targetLast = shape[shape.length - 1];
+    const rowBroadcast = targetLast === cur.shape[cur.shape.length - 1];
+    cur = rowBroadcast ? cur.sum(0) : cur.sum(cur.shape.length - 1);
   }
   // Walk from the last axis so summing one axis never shifts the indices
   // of the axes still to be checked.
