@@ -1,24 +1,7 @@
-# 通过 GitHub OIDC「可信发布」把包发到 npm —— 全程不需要任何长效 token。
-#
-# 前置（仅此一次，由仓库拥有者在 npm 网页完成，不传 token）：
-#   1. 登录 npmjs.com → 进入包 moxwebgpu → Settings → Trusted Publishers
-#   2. Add Publisher：
-#        - Publisher: GitHub Actions
-#        - Repository: codecloud-dev/moxwebgpu
-#        - Workflow name: publish.yml
-#        - Environment: （留空）
-#   3. 保存。
-# 配置好后，本流程在推送 `v*` tag 时自动 `pnpm publish --provenance`，
-# npm 会用 GitHub 临时签发的 OIDC 令牌完成发布（带 provenance 溯源）。
-# 若未配置就推了 tag：本流程会失败（无害），去网页配置后「Re-run」该次运行即可。
+# 推 v* tag 时从 GitHub Actions 发包，并生成 OIDC provenance。
+# 发布闸门由 ENABLE_NPM_PUBLISH 控制，未开启时跳过。
 
 name: Publish to npm (OIDC)
-
-# 2026-11-13 审计修复：原来这里写了 `enabled: false`，但 GitHub Actions
-# 没有 `enabled` 这个顶层键，导致 workflow 校验失败、每次 push 都产生一个
-# 0 job 的红 run。改为 job 级 if 闸门：默认变量未设置 => job 跳过 => run 绿，
-# 且不会在 OIDC 未配置时误发包。需要发布时，在仓库 Settings → Secrets and
-# variables → Actions → Variables 设置对应变量为 true，再手动触发本流程。
 
 on:
   push:
@@ -44,6 +27,7 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+          registry-url: https://registry.npmjs.org/
 
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -51,5 +35,7 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Publish (provenance, no token)
+      - name: Publish (provenance)
         run: pnpm publish --provenance --no-git-checks --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

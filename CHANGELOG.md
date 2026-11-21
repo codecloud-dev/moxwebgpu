@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/),
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.6] - 2026-11-21
+
+### 变更
+
+- 发布工作流改用 CI 凭据认证并保留 OIDC provenance；包功能无变化。
+
 ## [1.1.5] - 2026-11-21
 
 ### 修复
