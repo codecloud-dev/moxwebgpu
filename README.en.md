@@ -536,7 +536,7 @@ If it is useful in your work, you can also support development:
 
 <p align="center"><img src="assets/afdian-qr.jpg" width="200" alt="Afdian sponsorship QR code"></p>
 
-Stars, shares, or telling me where you use it are the best support. See [FUNDING.yml](FUNDING.yml) for the channels.
+Stars, shares, or telling me where you use it are the best support. See [FUNDING.yml](.github/FUNDING.yml) for the channels.
 
 ## 📜 License
 

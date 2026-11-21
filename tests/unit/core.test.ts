@@ -10,7 +10,7 @@ import {
 } from '../../src/tensor/codegen.js';
 import { createNode, topoSort, type OpDef } from '../../src/graph/lazy.js';
 import { matmulDef } from '../../src/tensor/ops/matmul.js';
-import { concatDef } from '../../src/tensor/ops/shape.js';
+import { concatDef, sliceDef } from '../../src/tensor/ops/shape.js';
 import { axisReduceOpDef, normAxis } from '../../src/tensor/ops/reduce.js';
 import { softmaxDef } from '../../src/tensor/ops/nn.js';
 import { Tensor } from '../../src/tensor/tensor.js';
@@ -234,6 +234,15 @@ describe('op-surface regressions (graph build only, no GPU)', () => {
     expect(() =>
       (lazyLeaf([2, 2, 2, 2, 2]) as any).slice([0, 0, 0, 0, 0], [1, 1, 1, 1, 2]),
     ).toThrow(/4D/);
+  });
+
+  it('slice rejects fractional/oversized ranges in both chain and op layer', () => {
+    expect(() => (lazyLeaf([4, 6]) as any).slice(0.5, 2)).toThrow(/out of bounds/);
+    expect(() => (lazyLeaf([4, 6]) as any).slice([0, 5], [2, 2])).toThrow(/out of bounds/);
+    // Direct op use must not bypass the same guard.
+    expect(() => sliceDef.outShape!([[4, 6]], { start: [0, 0.5], size: [2, 2] })).toThrow();
+    expect(() => sliceDef.outShape!([[4, 6]], { start: [0, 1], size: [2] })).toThrow(/rank/);
+    expect(sliceDef.outShape!([[4, 6]], { start: [1, 2], size: [2, 3] })).toEqual([2, 3]);
   });
 
   it('softmax build rejects non-f32 (shader would not compile)', () => {

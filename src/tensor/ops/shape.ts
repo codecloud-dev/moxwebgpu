@@ -63,8 +63,26 @@ export interface SliceAttrs {
 export const sliceDef: OpDef = {
   name: 'slice',
   outShape: (_shapes, attrs) => {
-    assertCopyRank(_shapes[0].length, 'slice');
-    return attrs.size as number[];
+    const inShape = _shapes[0];
+    assertCopyRank(inShape.length, 'slice');
+    const { start, size } = attrs as SliceAttrs;
+    // 链式 API 已经校验过一次，但 apply(sliceDef, ...) 可被直接调用；
+    // 算子层自己再守一次，避免非法坐标变成 WGSL uniform 里的 NaN/越界读取。
+    if (!Array.isArray(start) || !Array.isArray(size) ||
+        start.length !== inShape.length || size.length !== inShape.length) {
+      throw new Error(
+        `moxwebgpu: slice requires start/size arrays of rank ${inShape.length}, got ${JSON.stringify({ start, size })}`,
+      );
+    }
+    for (let d = 0; d < inShape.length; d++) {
+      if (!Number.isInteger(start[d]) || !Number.isInteger(size[d]) ||
+          start[d] < 0 || size[d] < 0 || start[d] + size[d] > inShape[d]) {
+        throw new Error(
+          `moxwebgpu: slice range [${start}, ${size}] out of bounds for shape [${inShape}]`,
+        );
+      }
+    }
+    return [...size];
   },
   build: (shapes, dtypes, attrs) => {
     const dtype: DType = dtypes[0];

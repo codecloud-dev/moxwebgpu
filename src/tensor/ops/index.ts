@@ -172,7 +172,8 @@ export function installTensorOps(proto: object): void {
     while (s.length < ndim) s.push(0);
     while (z.length < ndim) z.push(this.shape[z.length]);
     for (let d = 0; d < ndim; d++) {
-      if (s[d] < 0 || z[d] < 0 || s[d] + z[d] > this.shape[d]) {
+      if (!Number.isInteger(s[d]) || !Number.isInteger(z[d]) ||
+          s[d] < 0 || z[d] < 0 || s[d] + z[d] > this.shape[d]) {
         throw new Error(`moxwebgpu: slice range [${s}, ${z}] out of bounds for shape [${this.shape}]`);
       }
     }

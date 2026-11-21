@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/),
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.5] - 2026-11-21
+
+### 修复
+
+- **`slice()` 在算子层也守门**：链式 API 与 `apply(sliceDef, ...)` 两条路径都会拒绝非整数 start/size 与越界范围，避免非法坐标变成 WGSL uniform 里的 NaN/越界读取。
+- 英文 README 的 FUNDING 链接修到本仓，不再指向旧仓库。
 ## [1.1.4] - 2026-11-19
 
 本轮是副副旗舰深度升级：不靠 issue 清单，直接真跑 GPU 数值梯度测试，抓出三个会让训练结果静默错误的真 bug，并修掉一个会让 GPU 测试拿旧构建产物验证的假绿通道。
