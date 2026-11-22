@@ -18,6 +18,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CHROME_ARGS = [
   '--enable-unsafe-webgpu',
   '--enable-features=Vulkan',
+  // Ensure WebGL2 (fallback backend) also runs on software rendering in CI.
+  '--use-gl=angle',
+  '--use-angle=swiftshader',
   '--no-sandbox',
   '--disable-dev-shm-usage',
 ];

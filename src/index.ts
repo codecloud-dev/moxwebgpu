@@ -33,6 +33,11 @@ export { backward, sumTo } from './graph/autograd.js';
 // ---- codegen (for building custom ops) ----
 export * from './tensor/codegen.js';
 
+// ---- WebGL2 fallback backend ----
+// 当 WebGPU 不可用时用同一套张量风格 API 跑在 WebGL2 上。按需引入，不影响主路径。
+export { detectBackend, hasWebGl2, GlRuntime, GlTensor, layout } from './gl/index.js';
+export type { BackendKind, BackendInfo, GlShape } from './gl/index.js';
+
 // ---- version ----
 // 由 tsup 构建期注入（见 tsup.config.ts 的 define），与 package.json 的 version 保持一致。
 export const MOXWEBGPU_VERSION = __MOXWEBGPU_VERSION__;

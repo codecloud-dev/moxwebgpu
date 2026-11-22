@@ -5,6 +5,17 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/),
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.2.0] - 2026-11-22
+
+### 新增
+
+- **WebGL2 回退后端**：无 WebGPU 时可用 `GlRuntime` + `GlTensor` 跑同一套张量风格 API（add/sub/mul/div、exp/sqrt/relu/sigmoid、matmul、sum/mean、row/col 广播）。浮点纹理 + fragment shader 执行，`detectBackend()` 三态探测（webgpu/webgl2/unsupported），`hasWebGl2()` 单独判浮点渲染能力。
+- 新增 `pnpm test:gl2`，在 SwiftShader 的真实 WebGL2 上下文里做数值回归；matmul、广播、reduce 均对照 JS 参考值验证。
+
+### 说明
+
+- WebGL2 无 compute shader，reduce/matmul 在单 fragment 内循环实现，大张量上比 WebGPU compute pass 慢，属预期取舍；需要自写 WGSL kernel 的高级能力仍走 WebGPU 路径。
+
 ## [1.1.6] - 2026-11-21
 
 ### 变更

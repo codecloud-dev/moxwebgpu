@@ -20,7 +20,7 @@
   <a href="https://github.com/codecloud-dev/moxwebgpu/blob/main/LICENSE"><img src="https://img.shields.io/github/license/codecloud-dev/moxwebgpu?style=flat-square&color=37d5d3" alt="License"></a>
   <a href="https://github.com/codecloud-dev/moxwebgpu/stargazers"><img src="https://img.shields.io/github/stars/codecloud-dev/moxwebgpu?style=flat-square&color=ff7ac3" alt="Stars"></a>
   <a href="https://github.com/codecloud-dev/moxwebgpu/commits/main"><img src="https://img.shields.io/github/last-commit/codecloud-dev/moxwebgpu?style=flat-square&color=8a7bff" alt="Last commit"></a>
-  <a href="https://github.com/codecloud-dev/moxwebgpu"><img src="https://img.shields.io/badge/tests-66_unit-3DDC84?style=flat-square" alt="tests: 66 unit"></a>
+  <a href="https://github.com/codecloud-dev/moxwebgpu"><img src="https://img.shields.io/badge/tests-106_tests-3DDC84?style=flat-square" alt="tests: 106 tests"></a>
   <a href="https://github.com/codecloud-dev/moxwebgpu/pulls"><img src="https://img.shields.io/badge/PRs-welcome-8a7bff?style=flat-square&logo=github&logoColor=white" alt="PRs welcome"></a>
 </p>
 
@@ -92,7 +92,8 @@ Core     BufferPool (power-of-two buckets) · PipelineCache (WGSL hash) · raw K
 - **30+ GPU ops** — elementwise, two-phase tree reductions, argmax/argmin, 16×16-tiled matmul, fused softmax, strided slicing/concat, zero-copy reshape
 - **Reverse-mode autodiff built in** — `.withGrad()` / `.backward()` fill `.grad` lazily; train models entirely in the browser (since v1.0)
 - **Silent-failure defense** — shader compile errors surfaced with line/column via `getCompilationInfo()`
-- **99 passing tests** — 66 unit tests (CPU-only, `pnpm test`) + 33 GPU e2e (value-compared against CPU references), green even on GPU-less machines via SwiftShader + xvfb
+- **106 passing tests** — 67 unit (CPU-only), 33 WebGPU e2e, 6 WebGL2 fallback (real WebGL2 context); all value-checked against CPU references and green on GPU-less machines via SwiftShader + xvfb
+- **WebGL2 fallback** — no WebGPU? `detectBackend()` drops to a WebGL2 backend running the same tensor-style API (elementwise / matmul / reductions); WebGPU-only WGSL kernels still use the GPU path
 - **Zero runtime dependencies**, ESM + CJS + IIFE + d.ts, ~30 KB browser bundle
 
 ## 💡 About this project
@@ -107,7 +108,7 @@ moxwebgpu is a standalone open-source library: rebuilding, properly, the WebGPU 
 
 ## 📦 Install
 
-> ✅ **Published to npm**: package name `@codecloud-dev/moxwebgpu` (current `version: 1.1.4`). OIDC token-less publish flow is wired up (`.github/workflows/publish.yml`). Install via **npm** below, or build **from source**.
+> ✅ **Published to npm**: package name `@codecloud-dev/moxwebgpu` (current `version: 1.2.0`). OIDC token-less publish flow is wired up (`.github/workflows/publish.yml`). Install via **npm** below, or build **from source**.
 
 **Browser `<script>` (zero build):**
 
@@ -449,8 +450,9 @@ chromium --enable-unsafe-webgpu --enable-features=Vulkan --no-sandbox
 | Command | What it does |
 | ------- | ------------ |
 | `pnpm build` | tsup → ESM / CJS / IIFE + d.ts |
-| `pnpm test` | 66 unit tests |
-| `pnpm test:gpu` | 33 GPU e2e (auto SwiftShader/xvfb) |
+| `pnpm test` | 67 unit tests |
+| `pnpm test:gpu` | 33 WebGPU e2e (auto SwiftShader/xvfb) |
+| `pnpm test:gl2` | 6 WebGL2 fallback tests (real WebGL2 context) |
 | `pnpm test:all` | both |
 | `pnpm bench` | micro-benchmarks |
 | `pnpm demo` | build + serve the demo page (:5173) |
@@ -494,7 +496,7 @@ Want to add an op? `OpDef` = pure metadata (shape inference + codegen) → two t
 - [x] **v0.1** — three-layer architecture, 30+ ops, 33 real GPU e2e tests, liquid-glass demo
 - [x] **v0.2** — arbitrary-axis reductions (any rank / negative axes), integer reduction fixes, scheduler temp recycling
 - [x] **v1.0** — reverse-mode autodiff on the lazy graph, backward for matmul/softmax/sum/mean, token-free OIDC publishing to npm
-- [x] npm first publish (`@codecloud-dev/moxwebgpu`, currently `1.1.4`) + docs site live
+- [x] npm first publish (`@codecloud-dev/moxwebgpu`, currently `1.2.0`) + docs site live
 - [ ] More NN ops: layernorm / embedding / conv1d
 - [ ] Adjacent-elementwise op pass fusion (fewer dispatches)
 - [ ] Run inside a Web Worker / OffscreenCanvas
